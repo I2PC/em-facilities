@@ -384,11 +384,11 @@ class BoxWizardView(tk.Frame):
         labelFrame3.columnconfigure(0, minsize=120)
 
         _addPair("Protocols", 0, labelFrame3, entry="else", t1='GPU id', t2="(-1 to use the alternative below)")
-        _addPair(MOTIONCOR2, 1, labelFrame3, t2="(if not, Xmipp will be used)", default='1')
-        _addPair(GCTF, 2, labelFrame3, t2="(if not, ctfFind4 will be used)", default='3')
+        _addPair(MOTIONCOR2, 1, labelFrame3, t2="(if not, Xmipp will be used)", default='-1')
+        _addPair(GCTF, 2, labelFrame3, t2="(if not, ctfFind4 will be used)", default='-1')
         #_addPair(CRYOLO, 3, labelFrame3, t2="(if not, there are other pickers)", default='-1')
-        _addPair(RELION, 3, labelFrame3, t2="(if not, Relion with CPU will be used)", default='2')
-        _addPair(GL2D, 4, labelFrame3, t2="(if not, streaming 2D class. is done in batches)", default='0')
+        _addPair(RELION, 3, labelFrame3, t2="(if not, Relion with CPU will be used)", default='-1')
+        _addPair(GL2D, 4, labelFrame3, t2="(if not, streaming 2D class. is done in batches)", default='-1')
 
         frame.columnconfigure(0, weight=1)
 
