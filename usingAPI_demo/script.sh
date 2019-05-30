@@ -1,23 +1,20 @@
 
-# GENERAL VARS
-tokenPattern=~/em-facilities/usingAPI_demo/project_*
+# MAIN VARS
 scipionBin=~/scipion/scipion
-acquisitionScript=~/em-facilities/usingAPI_demo/acquisition_workflow_demo.py
+emfacilities=~/em-facilities
+tokenPattern=/tmp/scipion/project_*  # must coincide with the token made by the acquisitionScript
+
+# DERIVED VARS
+scriptFolder=$emfacilities/usingAPI_demo
+acquisitionScript=$scriptFolder/acquisition_workflow_demo.py
 
 
 # LAUNCHER
-#rm $tokenPattern 2>/dev/null
 
-#$scipionBin python $acquisitionScript
+rm $tokenPattern 2>/dev/null
 
-#ls $tokenPattern 2>/dev/null && projectToken=$(ls $tokenPattern) && rm $projectToken && project="${projectToken#*_}" && echo $project && $scipionBin project $project
+$scipionBin python $acquisitionScript
 
-emfacilities=~/em-facilities/usingAPI_demo
-
-rm /tmp/scipion/project_* 2>/dev/null
-
-~/scipion/scipion python $emfacilities/acquisition_workflow_demo.py
-
-ls $emfacilities/project_* 2>/dev/null && projectToken=$(ls /tmp/scipion/project_*)  && project="${projectToken#*_}" && echo $project && ~/scipion/scipion project $project
+ls $tokenPattern 2>/dev/null && projectToken=$(ls $tokenPattern) && project="${projectToken#*_}" && rm $tokenPattern && $scipionBin project $project
 
 

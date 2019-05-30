@@ -623,7 +623,7 @@ class BoxWizardView(tk.Frame):
         os.system('touch /tmp/scipion/project_%s' % projName)
 
         os.system('%s python %s %s %s &' % (pw.getScipionScript(),
-                                            'schedule_project.py',
+                                           'schedule_project.py',
                                             projName, ignoreOption))
 
         #os.system('%s project %s &' % (pw.getScipionScript(), projName))
