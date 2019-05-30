@@ -1085,7 +1085,7 @@ def preprocessWorkflow(project, dataPath, configDict):
     # --------- AUTO CLASS SELECTION I---------------------------
     protCLSEL1 = project.newProtocol(XmippProtEliminateEmptyClasses,
                                      objLabel='Xmipp - Auto class selection I',
-                                     threshold=8.0)
+                                     threshold=10.0)
     setExtendedInput(protCLSEL1.inputClasses, protCL, 'outputClasses')
     _registerProt(protCLSEL1)#, 'outputAverages')
 
@@ -1105,7 +1105,7 @@ def preprocessWorkflow(project, dataPath, configDict):
     # --------- AUTO CLASS SELECTION II---------------------------
     protCLSEL2 = project.newProtocol(XmippProtEliminateEmptyClasses,
                                      objLabel='Xmipp - Auto class selection II',
-                                     threshold=10.0)
+                                     threshold=12.0)
     setExtendedInput(protCLSEL2.inputClasses, protCL2, 'outputClasses')
     _registerProt(protCLSEL2)#, 'outputAverages')
 
