@@ -2,7 +2,8 @@
 # MAIN VARS
 scipionBin=~/scipion/scipion
 emfacilities=~/em-facilities
-tokenPattern=/tmp/scipion/project_*  # must coincide with the token made by the acquisitionScript
+tokenDir=/tmp/scipion
+tokenPattern=$tokenDir/project_*  # must coincide with the token made by the acquisitionScript
 
 # DERIVED VARS
 scriptFolder=$emfacilities/usingAPI_demo
@@ -10,6 +11,8 @@ acquisitionScript=$scriptFolder/acquisition_workflow_demo.py
 
 
 # LAUNCHER
+
+if ! ls $tokenDir 2>/dev/null ; then mkdir $tokenDir ; fi
 
 rm $tokenPattern 2>/dev/null
 
