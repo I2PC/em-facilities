@@ -616,7 +616,8 @@ class BoxWizardView(tk.Frame):
         ignoreOption = '--ignore XmippProtParticlePicking ' \
                                 'XmippProtConsensusPicking ' \
                                 'XmippParticlePickingAutomatic ' \
-                                'ProtUnionSet'
+                                'ProtUnionSet ' \
+                                'XmippProtExtractParticles '
 
                        # ('' if (self._getConfValue(WAIT2PICK) == 'False' or 
                        #         self._getConfValue(PARTSIZE, 0) == 0) else
