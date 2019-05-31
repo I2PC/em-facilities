@@ -613,7 +613,11 @@ class BoxWizardView(tk.Frame):
 
         preprocessWorkflow(project, dataPath, self.configDict)
 
-        ignoreOption = '--ignore XmippProtParticlePicking XmippProtConsensusPicking'
+        ignoreOption = '--ignore XmippProtParticlePicking ' \
+                                'XmippProtConsensusPicking ' \
+                                'XmippParticlePickingAutomatic ' \
+                                'ProtUnionSet'
+
                        # ('' if (self._getConfValue(WAIT2PICK) == 'False' or 
                        #         self._getConfValue(PARTSIZE, 0) == 0) else
                        #  '--ignore XmippProtParticlePicking '
