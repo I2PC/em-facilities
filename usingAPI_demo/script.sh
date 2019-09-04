@@ -1,5 +1,6 @@
 
 # MAIN VARS
+scipionWrapper=/opt/VirtualGL/bin/vglrun
 scipionBin=~/scipion/scipion
 emfacilities=~/em-facilities
 tokenDir=/tmp/scipion
@@ -18,6 +19,6 @@ rm $tokenPattern 2>/dev/null
 
 $scipionBin python $acquisitionScript
 
-ls $tokenPattern 2>/dev/null && projectToken=$(ls $tokenPattern) && project="${projectToken#*_}" && rm $tokenPattern && $scipionBin project $project
+ls $tokenPattern 2>/dev/null && projectToken=$(ls $tokenPattern) && project="${projectToken#*_}" && rm $tokenPattern && $scipionWrapper $scipionBin project $project
 
 

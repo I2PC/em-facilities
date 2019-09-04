@@ -92,6 +92,7 @@ try:
 except Exception as exc:
      pwutils.pluginNotFound('xmipp', errorMsg=exc)
 
+WINDOWS_TITLE = 'WINDOWS_TITLE'
 
 VIEW_WIZARD = 'wizardview'
 
@@ -153,11 +154,11 @@ LABELS = {
     SYMGROUP: "Estimated symmetry group",
 
     MOTIONCOR2: "MotionCor2",
-    #CRYOLO: "Cryolo",
+    CRYOLO: "Cryolo",
     RELION: "Relion",
-    # OPTICAL_FLOW: "Optical Flow",
-    #SPARX: 'Eman2 Sparx',
-    #DOGPICK: 'Appion DoG',
+    OPTICAL_FLOW: "Optical Flow",
+    SPARX: 'Eman2 Sparx',
+    DOGPICK: 'Appion DoG',
     GCTF: "gCtf",
     GL2D: "GL2D",
     EMAN_INITIAL: 'Eman Initial Volume',
@@ -187,6 +188,12 @@ formatConfParameters = {SIMULATION: bool,
                         TIMEOUT: 'splitTimesFloat',
                         INV_CONTR: bool,
                         NUM_CPU: int,
+                        MICS2PICK: int,
+                        MOTIONCOR2: str,
+                        GCTF: int,
+                        # CRYOLO: int,
+                        RELION: int,
+                        GL2D: int,
                         PARTS2CLASS: int,
                         WAIT2PICK: bool}
 
@@ -196,14 +203,8 @@ formatsParameters = {PARTSIZE: int,
                      DOSE0: float,
                      DOSEF: float,
                      # OPTICAL_FLOW: bool,
-                     # MICS2PICK: int,
-                     MOTIONCOR2: int,
-                     GCTF: int,
-                     #CRYOLO: int,
-                     RELION: int,
-                     GL2D: int,
-                     #SPARX: bool,
-                     #DOGPICK: bool,
+                     # SPARX: bool,
+                     # DOGPICK: bool,
                      EMAN_INITIAL: bool,
                      RANSAC: bool
                      }
@@ -213,11 +214,11 @@ class BoxWizardWindow(ProjectBaseWindow):
     
     def __init__(self, config, **kwargs):
         try:
-            title = '%s (%s on %s)' % (Message.LABEL_PROJECTS,
+            title = '%s (%s on %s)' % (config.get(WINDOWS_TITLE, 'kk'),
                                        pwutils.getLocalUserName(),
                                        pwutils.getLocalHostName())
         except Exception:
-            title = Message.LABEL_PROJECTS
+            title = config.get(WINDOWS_TITLE, 'kk')
         
         settings = ProjectSettings()
         self.generalCfg = settings.getConfig()
@@ -345,50 +346,67 @@ class BoxWizardView(tk.Frame):
             self.checkvars.append(key)
             cb.grid(row=r, column=col, padx=5, sticky='nw')
 
-        labelFrame = tk.LabelFrame(frame, text=' General ', bg='white',
+
+        ### Acquisition Info ###
+        labelFrame = tk.LabelFrame(frame, text=' Acquisition Info ', bg='white',
                                    font=self.bigFontBold)
         labelFrame.grid(row=0, column=0, sticky='nw', padx=20)
+        
 
         _addPair(PROJECT_NAME, 0, labelFrame, width=30, default=self._getProjectName(),
                  color='lightgray', traceCallback=self._onInputChange)
         _addPair(USER_NAME, 1, labelFrame, default='mySelf', width=30, traceCallback=self._onInputChange)
         _addPair(SAMPLE_NAME, 2, labelFrame, default='myProtein', width=30, traceCallback=self._onInputChange)
-        
-        labelFrame.columnconfigure(0, weight=1)
-        labelFrame.columnconfigure(0, minsize=120)
-        labelFrame.columnconfigure(1, weight=1)
+       
 
-
-        labelFrame2 = tk.LabelFrame(frame, text=' Pre-processing ', bg='white',
+        ### MotionCor2 parameters ###
+        labelFrame2 = tk.LabelFrame(frame, text=' MotionCor2 parameters ', bg='white',
                                     font=self.bigFontBold)
-        
         labelFrame2.grid(row=1, column=0, sticky='nw', padx=20, pady=10)
-        labelFrame2.columnconfigure(0, minsize=120)
+        
+        _addPair(FRAMES, 0, labelFrame2, default='3-0', t2='ex: 2-15 (empty = all frames, 0 = last frame)')
+        _addPair(DOSE0, 1, labelFrame2, default='0', t2='e/A^2')
+        _addPair(DOSEF, 2, labelFrame2, default='0', t2='(if 0, no dose weight is applied)')
 
-        _addPair(SYMGROUP, 0, labelFrame2, t2='(if unknown, set at c1)', default='d2')
-        _addPair(FRAMES, 1, labelFrame2, default='3-0', t2='ex: 2-15 (empty = all frames, 0 = last frame)')
-        _addPair(DOSE0, 2, labelFrame2, default='0', t2='e/A^2')
-        _addPair(DOSEF, 3, labelFrame2, default='0', t2='(if 0, no dose weight is applied)')
+
+        ### Picking parameters ###
+        labelFrame3 = tk.LabelFrame(frame, text=' Picking parameters ', bg='white',
+                                    font=self.bigFontBold)
+        labelFrame3.grid(row=2, column=0, sticky='nw', padx=20, pady=10)
+        
+        _addPair(PARTSIZE, 0, labelFrame3, default='250', t2='Angstroms (if 0, manual picking is launched)')
+        
+        
+        ### Initial volume estimation ###
+        labelFrame4 = tk.LabelFrame(frame, text=' Initial volume estimation ', bg='white',
+                                    font=self.bigFontBold)
+        labelFrame4.grid(row=3, column=0, sticky='nw', padx=20, pady=10)
+        
+        _addPair(SYMGROUP, 0, labelFrame4, t2='(if unknown, set at c1)', default='d2')
+        _addCheckPair(RANSAC, 1, labelFrame4, default=0)
+        _addCheckPair(EMAN_INITIAL, 1, labelFrame4, default=1, col=2)
+        
+        
+        
         # _addPair(MICS2PICK, 4, labelFrame2, t2='(if 0, only automatic picking is done)')
-        _addPair(PARTSIZE, 4, labelFrame2, default='250', t2='Angstroms (if 0, manual picking is launched)')
-        _addPair('Optional protocols:', 5, labelFrame2, entry='empty')
+
+        #_addPair('Optional protocols:', 5, labelFrame2, entry='empty')
         #_addCheckPair(DOGPICK, 5, labelFrame2, default=1)
         #_addCheckPair(SPARX, 5, labelFrame2, col=2, default=1)
-        _addCheckPair(RANSAC, 5, labelFrame2, default=0)
-        _addCheckPair(EMAN_INITIAL, 5, labelFrame2, default=1, col=2)
 
-        labelFrame3 = tk.LabelFrame(frame, text=' GPU usage ', bg='white',
-                                    font=self.bigFontBold)
+        #labelFrame3 = tk.LabelFrame(frame, text=' GPU usage ', bg='white',
+        #                            font=self.bigFontBold)
 
-        labelFrame3.grid(row=2, column=0, sticky='nw', padx=20, pady=10)
-        labelFrame3.columnconfigure(0, minsize=120)
+        #labelFrame3.grid(row=2, column=0, sticky='nw', padx=20, pady=10)
+        #labelFrame3.columnconfigure(0, minsize=120)
 
-        _addPair("Protocols", 0, labelFrame3, entry="else", t1='GPU id', t2="(-1 to use the alternative below)")
-        _addPair(MOTIONCOR2, 1, labelFrame3, t2="(if not, Xmipp will be used)", default='-1')
-        _addPair(GCTF, 2, labelFrame3, t2="(if not, ctfFind4 will be used)", default='-1')
+        #_addPair("Protocols", 0, labelFrame3, entry="else", t1='GPU id', t2="(-1 to use the alternative below)")
+        #_addPair(MOTIONCOR2, 1, labelFrame3, t2="(if not, Xmipp will be used)", default='1')
+        #_addPair(GCTF, 2, labelFrame3, t2="(if not, ctfFind4 will be used)", default='3')
         #_addPair(CRYOLO, 3, labelFrame3, t2="(if not, there are other pickers)", default='-1')
-        _addPair(RELION, 3, labelFrame3, t2="(if not, Relion with CPU will be used)", default='-1')
-        _addPair(GL2D, 4, labelFrame3, t2="(if not, streaming 2D class. is done in batches)", default='-1')
+        #_addPair(RELION, 3, labelFrame3, t2="(if not, Relion with CPU will be used)", default='2')
+        #_addPair(GL2D, 4, labelFrame3, t2="(if not, streaming 2D class. is done in batches)", default='0')
+        
 
         frame.columnconfigure(0, weight=1)
 
@@ -613,7 +631,7 @@ class BoxWizardView(tk.Frame):
 
         preprocessWorkflow(project, dataPath, self.configDict)
 
-        ignoreOption = '--ignore XmippProtParticlePicking XmippProtConsensusPicking'
+        ignoreOption = '' # '--ignore XmippProtParticlePicking XmippProtConsensusPicking'
                        # ('' if (self._getConfValue(WAIT2PICK) == 'False' or 
                        #         self._getConfValue(PARTSIZE, 0) == 0) else
                        #  '--ignore XmippProtParticlePicking '
@@ -737,18 +755,21 @@ def preprocessWorkflow(project, dataPath, configDict):
     protMG = project.newProtocol(XmippProtMovieGain,
                                  objLabel='Xmipp - movie gain',
                                  frameStep=5,
-                                 movieStep=10,
+                                 movieStep=20,
                                  useExistingGainImage=False)
     setExtendedInput(protMG.inputMovies, protImport, 'outputMovies')
     _registerProt(protMG, 'outputImages')
 
     # ----------- MOTIONCOR ----------------------------
-    if configDict.get(MOTIONCOR2, -1) > -1 and ProtMotionCorr is not None:
+    if configDict.get(MOTIONCOR2, -1) != '-1' and ProtMotionCorr is not None:
+        mcMpi = (1 if configDict.get(MOTIONCOR2).isdigit() else
+                 len(configDict.get(MOTIONCOR2).split(' ')) + 1)
         protMA = project.newProtocol(ProtMotionCorr,
                                      objLabel='MotionCor2 - movie align.',
-                                     gpuList=str(configDict.get(MOTIONCOR2)),
+                                     gpuList=configDict.get(MOTIONCOR2),
+                                     numberOfMpi=mcMpi,
                                      doApplyDoseFilter=doDose,
-                                     patchX=7, patchY=7,
+                                     patchX=5, patchY=5,
                                      alignFrame0=configDict.get(FRAMES, [1,0])[0],
                                      alignFrameN=configDict.get(FRAMES, [1,0])[1])
         setExtendedInput(protMA.inputMovies, protImport, 'outputMovies')
@@ -851,31 +872,30 @@ def preprocessWorkflow(project, dataPath, configDict):
 
     if configDict.get(PARTSIZE, 0) == 0:  #configDict.get(MICS2PICK, 0) > 0:
         # -------- TRIGGER MANUAL-PICKER ---------------------------
-        # protTRIG0 = project.newProtocol(XmippProtTriggerData,
-        #                                 objLabel='Xmipp - trigger some mics',
-        #                                 outputSize=configDict.get(MICS2PICK),
-        #                                 delay=30,
-        #                                 allImages=configDict.get(WAIT2PICK, True))
-        # setExtendedInput(protTRIG0.inputImages, protPreMics, 'outputMicrographs')
-        # _registerProt(protTRIG0)
+        protTRIG0 = project.newProtocol(XmippProtTriggerData,
+                                        objLabel='Xmipp - trigger some mics',
+                                        outputSize=configDict.get(MICS2PICK),
+                                        allImages=configDict.get(WAIT2PICK, False))
+        setExtendedInput(protTRIG0.inputImages, protPreMics, 'outputMicrographs')
+        _registerProt(protTRIG0)
 
         # -------- XMIPP MANUAL-PICKER -------------------------
         protPrePick = project.newProtocol(XmippProtParticlePicking,
                                           objLabel='Xmipp - manual picking',
                                           doInteractive=False)
         setExtendedInput(protPrePick.inputMicrographs,
-                         protPreMics, 'outputMicrographs')  # protTRIG0
+                         protTRIG0, 'outputMicrographs')  # protTRIG0
         _registerProt(protPrePick)
         
         # -------- XMIPP AUTO-PICKING ---------------------------
         protPPauto = project.newProtocol(XmippParticlePickingAutomatic,
                                          objLabel='Xmipp - auto picking',
                                          xmippParticlePicking=protPrePick,
-                                         micsToPick=0  # 0=same ; 1=other
+                                         micsToPick=1  # 0=same ; 1=other
                                          )
-        # setExtendedInput(protPPauto.inputMicrographs,
-        #                  protPreMics, 'outputMicrographs')
-        protPPauto.addPrerequisites(protPrePick.getObjId())
+        setExtendedInput(protPPauto.inputMicrographs,
+                         protPreMics, 'outputMicrographs')
+        # protPPauto.addPrerequisites(protPrePick.getObjId())
         _registerProt(protPPauto)
 
         pickers.append(protPPauto)
@@ -947,7 +967,7 @@ def preprocessWorkflow(project, dataPath, configDict):
                                         consensusRadius=int(bxSize/3),
                                         consensus=-1)
         setExtendedInput(protCPand.inputCoordinates, pickers, pickersOuts)
-        _registerProt(protCPand)#, 'consensusCoordinates')
+        _registerProt(protCPand, 'consensusCoordinates')
 
         # --------- CONSENSUS PICKING OR -----------------------
         protCPor = project.newProtocol(XmippProtConsensusPicking,
@@ -956,13 +976,15 @@ def preprocessWorkflow(project, dataPath, configDict):
                                        consensus=1)
 
         setExtendedInput(protCPor.inputCoordinates, pickers, pickersOuts)
-        _registerProt(protCPor)#, 'consensusCoordinates')
+        _registerProt(protCPor, 'consensusCoordinates')
         finalPicker = protCPor
         outputCoordsStr = 'consensusCoordinates'
 
     else:
         finalPicker = pickers[0]
         outputCoordsStr = pickersOuts[0]
+        summaryList.append(finalPicker)
+        summaryExt.append(outputCoordsStr)
 
     # ---------------------------------- OR/SINGLE PICKING BRANCH ----------
 
@@ -1006,7 +1028,7 @@ def preprocessWorkflow(project, dataPath, configDict):
     protSCRor.autoParRejectionSSNR.set(XmippProtScreenParticles.REJ_PERCENTAGE_SSNR)
     protSCRor.autoParRejectionVar.set(XmippProtScreenParticles.REJ_VARIANCE)
     setExtendedInput(protSCRor.inputParticles, protTRIGor, 'outputParticles')  # protEEPor
-    _registerProt(protSCRor)#, 'outputParticles')
+    _registerProt(protSCRor, 'outputParticles')
 
     # ----------------------------- END OF OR/SINGLE PICKING BRANCH --------
 
@@ -1052,7 +1074,7 @@ def preprocessWorkflow(project, dataPath, configDict):
         protSCR.autoParRejectionSSNR.set(XmippProtScreenParticles.REJ_PERCENTAGE_SSNR)
         protSCR.autoParRejectionVar.set(XmippProtScreenParticles.REJ_VARIANCE)
         setExtendedInput(protSCR.inputParticles, protTRIG, 'outputParticles')  # protEEP
-        _registerProt(protSCR)#, 'outputParticles')
+        _registerProt(protSCR, 'outputParticles')
 
     # ************   CLASSIFY 2D   *****************************************
     # --------- TRIGGER PARTS ---------------------------
@@ -1085,7 +1107,8 @@ def preprocessWorkflow(project, dataPath, configDict):
     # --------- AUTO CLASS SELECTION I---------------------------
     protCLSEL1 = project.newProtocol(XmippProtEliminateEmptyClasses,
                                      objLabel='Xmipp - Auto class selection I',
-                                     threshold=10.0)
+                                     threshold=10.0,
+                                     usePopulation=False)
     setExtendedInput(protCLSEL1.inputClasses, protCL, 'outputClasses')
     _registerProt(protCLSEL1)#, 'outputAverages')
 
@@ -1105,7 +1128,8 @@ def preprocessWorkflow(project, dataPath, configDict):
     # --------- AUTO CLASS SELECTION II---------------------------
     protCLSEL2 = project.newProtocol(XmippProtEliminateEmptyClasses,
                                      objLabel='Xmipp - Auto class selection II',
-                                     threshold=12.0)
+                                     threshold=12.0,
+                                     usePopulation=False)
     setExtendedInput(protCLSEL2.inputClasses, protCL2, 'outputClasses')
     _registerProt(protCLSEL2)#, 'outputAverages')
 
@@ -1118,7 +1142,7 @@ def preprocessWorkflow(project, dataPath, configDict):
 
     # ***************   INITIAL VOLUME   ***********************************
     # ------------ RECONSTRUCT SIGNIFICANT ---------------------------
-    numCpusSig = numCpus-8
+    numCpusSig = numCpus-8 if numCpus>8 else numCpus
     protSIG = project.newProtocol(XmippProtReconstructSignificant,
                                   objLabel='Xmipp - Recons. significant',
                                   symmetryGroup=configDict.get(SYMGROUP, 'c1'),
@@ -1225,7 +1249,7 @@ def preprocessWorkflow(project, dataPath, configDict):
     bxSizeFull = int(configDict.get(PARTSIZE)/configDict.get(SAMPLING)/2+1)*2
     if configDict.get(SAMPLING) < DOWNSAMPLED_SAMPLING:
         protVOLfull = project.newProtocol(XmippProtCropResizeVolumes,
-                                          objLabel='Resize volume - FULL FIZE',
+                                          objLabel='Resize volume - FULL SIZE',
                                           doResize=True,
                                           resizeOption=1,  # dimensions
                                           doFourier=True,
@@ -1280,12 +1304,13 @@ def preprocessWorkflow(project, dataPath, configDict):
     setExtendedInput(protRelionRefine.inputParticles,
                      protSubsetFullPart, 'outputParticles')
     setExtendedInput(protRelionRefine.referenceVolume,
-                     protVOLfull, 'outputVolume')
+                     protVOLfull, 'outputVol')
     _registerProt(protRelionRefine)#, 'outputParticles')
 
     # --------- SUMMARY MONITOR -----------------------
     protMonitor = project.newProtocol(ProtMonitorSummary,
-                                   objLabel='Scipion - Summary Monitor')
+                                   objLabel='Scipion - Summary Monitor',
+                                   samplingInterval=20)
     protMonitor.inputProtocols.set(summaryList)
     # setExtendedInput(protMonitor.inputProtocols,
     #                  summaryList, summaryExt)
@@ -1301,3 +1326,4 @@ if __name__ == "__main__":
     
     wizWindow = BoxWizardWindow(confDict)
     wizWindow.show()
+
