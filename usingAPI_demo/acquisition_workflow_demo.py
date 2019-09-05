@@ -1299,7 +1299,7 @@ def preprocessWorkflow(project, dataPath, configDict):
                                            initialLowPassFilterA=15,
                                            symmetryGroup=configDict.get(SYMGROUP, 'c1'),
                                            doGpu=configDict.get(RELION, -1) > -1,
-                                           gpusToUse=str(configDict.get(RELION, 0))
+                                           gpusToUse='1:2'  # str(configDict.get(RELION, 0))
                                            )
     setExtendedInput(protRelionRefine.inputParticles,
                      protSubsetFullPart, 'outputParticles')
