@@ -34,7 +34,7 @@ from pyworkflow.project import Manager
 from pyworkflow.em.protocol import (ProtImportMovies, ProtMonitorSummary,
                                     ProtUnionSet, ProtUserSubSet,
                                     ProtExtractCoords, ProtMonitor2dStreamer,
-                                    ProtSubSet)
+                                    ProtSubSet, time)
 
 # Plugin imports
 ProtMotionCorr = pwutils.importFromPlugin('motioncorr.protocols', 'ProtMotionCorr')
@@ -85,11 +85,16 @@ def preprocessWorkflow(configDict):
     project = manager.createProject(configDict[PROJECT_NAME],
                                     location=configDict[SCIPION_PROJECT])
 
+    time.sleep(1)
+
     summaryList = []
     summaryExt = []
 
-    def _registerProt(prot, output=None):
-        project.saveProtocol(prot)
+    def _registerProt(prot, output=None, launch=True, wait=False):
+        if launch:
+            project.launchProtocol(prot, wait=wait)
+        else:
+            project.saveProtocol(prot)
 
         if output is not None:
             summaryList.append(prot)
@@ -97,7 +102,6 @@ def preprocessWorkflow(configDict):
 
     def setExtendedInput(protDotInput, lastProt, extended, pointer=False):
         if pointer:
-
             pointer = Pointer(lastProt, extended=extended)
             protDotInput.setPointer(pointer)
         else:
@@ -491,8 +495,7 @@ def preprocessWorkflow(configDict):
     # --------- AUTO CLASS SELECTION I---------------------------
     protCLSEL1 = project.newProtocol(XmippProtEliminateEmptyClasses,
                                      objLabel='Xmipp - Auto class selection I',
-                                     threshold=10.0,
-                                     usePopulation=False)
+                                     threshold=10.0)
     setExtendedInput(protCLSEL1.inputClasses, protCL, 'outputClasses')
     _registerProt(protCLSEL1)#, 'outputAverages')
 
@@ -512,8 +515,7 @@ def preprocessWorkflow(configDict):
     # --------- AUTO CLASS SELECTION II---------------------------
     protCLSEL2 = project.newProtocol(XmippProtEliminateEmptyClasses,
                                      objLabel='Xmipp - Auto class selection II',
-                                     threshold=12.0,
-                                     usePopulation=False)
+                                     threshold=12.0)
     setExtendedInput(protCLSEL2.inputClasses, protCL2, 'outputClasses')
     _registerProt(protCLSEL2)#, 'outputAverages')
 

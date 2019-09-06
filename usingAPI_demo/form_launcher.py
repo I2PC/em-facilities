@@ -42,7 +42,7 @@ import pyworkflow.gui as pwgui
 from pyworkflow.gui.project.base import ProjectBaseWindow
 from pyworkflow.gui.widgets import HotButton, Button
 
-from acquisition_workflow import preprocessWorkflow
+from acquisition_workflow_basic import preprocessWorkflow
 from constants import *
 
 
@@ -51,9 +51,8 @@ class BoxWizardWindow(ProjectBaseWindow):
 
     def __init__(self, config, **kwargs):
         try:
-            title = '%s (%s on %s)' % (Message.LABEL_PROJECTS,
-                                       pwutils.getLocalUserName(),
-                                       pwutils.getLocalHostName())
+            title = 'Acquisition Form (%s on %s)' % (pwutils.getLocalUserName(),
+                                                     pwutils.getLocalHostName())
         except Exception:
             title = Message.LABEL_PROJECTS
 
@@ -195,7 +194,7 @@ class BoxWizardView(tk.Frame):
         labelFrame.columnconfigure(0, weight=1)
         labelFrame.columnconfigure(0, minsize=120)
         labelFrame.columnconfigure(1, weight=1)
-
+        labelFrame.winfo_width()
         labelFrame2 = tk.LabelFrame(frame, text=' Pre-processing ', bg='white',
                                     font=self.bigFontBold)
 
@@ -361,44 +360,38 @@ class BoxWizardView(tk.Frame):
             #                  "Choose DoG picker, Sparx, crYOLO or "
             #                  "fix particle size to 0 for manual picking.")
 
-            projName = self._getProjectName()
-            dataPath = os.path.join(dataFolder, projName)
+            self.configDict[PROJECT_NAME] = self._getProjectName()
+            self.configDict[DATA_FOLDER] = os.path.join(dataFolder, self.configDict[PROJECT_NAME])
 
-            # if not len(pwutils.glob(os.path.join(dataPath,
-            #                                     self._getConfValue(PATTERN)))):
+            # if not len(pwutils.glob(os.path.join(self.configDict[DATA_FOLDER],
+            #                                      self._getConfValue(PATTERN)))):
             #     errors.append("No file found in %s.\n"
             #                   "Make sure that the acquisition has been started."
-            #                   % os.path.join(dataPath, self._getConfValue(PATTERN)))
+            #                   % os.path.join(self.configDict[DATA_FOLDER],
+            #                                  self._getConfValue(PATTERN)))
 
             scipionProjPath = pwutils.expandPattern(self._getConfValue(SCIPION_PROJECT))
+            self.configDict[SCIPION_PROJECT] = scipionProjPath
             if not errors:
-                if os.path.exists(os.path.join(scipionProjPath, projName)):
+                if os.path.exists(os.path.join(scipionProjPath,
+                                               self.configDict[PROJECT_NAME])):
                     errors.append("Project path '%s' already exists.\n"
-                                  "Change User or Sample name" % projName)
+                                  "Change User or Sample name"
+                                  % self.configDict[PROJECT_NAME])
 
         if errors:
             errors.insert(0, "*Errors*:")
             self.windows.showError("\n  - ".join(errors))
         else:
-            # self._createDataFolder(dataPath, scipionProjPath)
-            # command = os.path.join(os.getenv("SCIPION_HOME"),
-            #                        "scripts/mirror_directory.sh")
-            # if doBackup:
-            #     subprocess.Popen([command, dataFolder, projName, backupFolder],
-            #                      stdout=open('logfile_out.log', 'w'),
-            #                      stderr=open('logfile_err.log', 'w')
-            #                      )
-            # print projName, dataPath, scipionProjPath
-
-            self._createScipionProject(projName, dataPath, scipionProjPath)
+            self._createScipionProject()
             self.windows.close()
 
-    def _createScipionProject(self, projName, dataPath, scipionProjPath):
+    def _createScipionProject(self):
 
-        print("")
-        print("Deposition Path: %s" % dataPath)
-        print("Project Name: %s" % projName)
-        print("Project Path: %s" % scipionProjPath)
+        print('')
+        print("Deposition Path: %s" % self.configDict[DATA_FOLDER])
+        print("Project Name: %s" % self.configDict[PROJECT_NAME])
+        print("Project Path: %s" % self.configDict[SCIPION_PROJECT])
 
         self.castConf()
 
@@ -413,27 +406,21 @@ class BoxWizardView(tk.Frame):
             os.system('%s python %s "%s" %s %d %s &' % (pw.getScipionScript(),
                                                         'simulate_acquisition.py',
                                                         os.path.join(rawData, self._getConfValue(PATTERN)),
-                                                        dataPath, self.configDict.get(TIMEOUT),
+                                                        self.configDict[DATA_FOLDER],
+                                                        self.configDict.get(TIMEOUT),
                                                         gainPath))
-
-        manager = Manager()
-        project = manager.createProject(projName, location=scipionProjPath)
-
-        # smtpServer = self._getConfValue(SMTP_SERVER, '')
-        # smtpFrom = self._getConfValue(SMTP_FROM, '')
-        # smtpTo = self._getConfValue(SMTP_TO, '')
-        # doMail = self._getValue(EMAIL_NOTIFICATION)
-        # doPublish = self._getValue(HTML_REPORT)
+            time.sleep(0.5)  # wait a second to ensure that simulation is started
 
         count = 1
-        while not len(pwutils.glob(os.path.join(dataPath,
+        while not len(pwutils.glob(os.path.join(self.configDict[DATA_FOLDER],
                                                 self._getConfValue(PATTERN)))):
             if count == 6:
                 self.windows.close()
 
             string = ("No file found in %s.\n"
                       "Make sure that the acquisition has been started.\n\n"
-                      % os.path.join(dataPath, self._getConfValue(PATTERN)))
+                      % os.path.join(self.configDict[DATA_FOLDER],
+                                     self._getConfValue(PATTERN)))
             if count < 5:
                 str2 = "Retrying... (%s/5)" % count
             else:
@@ -444,7 +431,7 @@ class BoxWizardView(tk.Frame):
             time.sleep(self.configDict.get(TIMEOUT) / 10)
             count += 1
 
-        preprocessWorkflow(project, dataPath, self.configDict)
+        preprocessWorkflow(self.configDict)
 
         ignoreOption = '--ignore XmippProtParticlePicking ' \
                        'XmippProtConsensusPicking ' \
@@ -458,13 +445,16 @@ class BoxWizardView(tk.Frame):
         #           'XmippParticlePickingAutomatic '
         #           'XmippProtConsensusPicking ')
 
-        os.system('touch /tmp/scipion/project_%s' % projName)
+        os.system('touch /tmp/scipion/project_%s'
+                  % self.configDict[PROJECT_NAME])
 
-        os.system('%s python %s %s %s &' % (pw.getScipionScript(),
-                                            'schedule_project.py',
-                                            projName, ignoreOption))
+        # os.system('%s python %s %s %s &' % (pw.getScipionScript(),
+        #                                     'schedule_project.py',
+        #                                     self.configDict[PROJECT_NAME],
+        #                                     ignoreOption))
 
-        os.system('%s project %s &' % (pw.getScipionScript(), projName))
+        os.system('%s project %s &' % (pw.getScipionScript(),
+                                       self.configDict[PROJECT_NAME]))
 
 
 def createDictFromConfig(confFile):

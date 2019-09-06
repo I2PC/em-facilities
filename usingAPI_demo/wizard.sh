@@ -1,13 +1,13 @@
 
 # MAIN VARS
-scipionBin=~/scipion/scipion
+scipionBin=~/scipionBIN/scipion
 emfacilities=~/em-facilities
 tokenDir=/tmp/scipion
 tokenPattern=$tokenDir/project_*  # must coincide with the token made by the acquisitionScript
 
 # DERIVED VARS
 scriptFolder=$emfacilities/usingAPI_demo
-acquisitionScript=$scriptFolder/acquisition_workflow_demo.py
+acquisitionScript=$scriptFolder/form_launcher.py  # acquisition_workflow_demo.py
 
 
 # LAUNCHER
