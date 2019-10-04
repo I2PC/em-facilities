@@ -75,6 +75,9 @@ SphireProtCRYOLO = pwutils.importFromPlugin('sphire.protocols', 'SphireProtCRYOL
 ProtRelionRefine3D = pwutils.importFromPlugin('relion.protocols', 'ProtRelionRefine3D')
 ProtRelionClassify2D = pwutils.importFromPlugin('relion.protocols', 'ProtRelionClassify2D')
 
+ProtCryoSparc2D = pwutils.importFromPlugin('cryosparc2.protocols', 'ProtCryo2D')
+ProtCryoSparcInitialModel = pwutils.importFromPlugin('cryosparc2.protocols', 'ProtCryoSparcInitialModel')
+
 try:
     from xmipp3.protocols import (XmippProtOFAlignment, XmippProtMovieGain,
                                   XmippProtMovieMaxShift, XmippProtCTFMicrographs,
@@ -117,6 +120,18 @@ RELION = 'RELION'
 GL2D = 'GL2D'
 EMAN_INITIAL = 'EMAN_INITIAL'
 RANSAC = 'RANSAC'
+CRYOS_2D = 'CRYOS_2D'
+CRYOS_INIT = 'CRYOS_INIT'
+RELION_PICK = 'RELION_PICK'
+RELION_2D = 'RELION_2D'
+RELION_3D = 'RELION_3D'
+XMIPP_2D = 'XMIPP_2D'
+SIGNIFICANT = 'SIGNIFICANT'
+SAMPLING_2D = '2D_SAMPLING'
+SAMPLING_3D = '3D_SAMPLING'
+DO_2DCLASS = 'DO_2DCLASS'
+DO_INITVOL = 'DO_INITVOL'
+DO_3DCLASS = 'DO_3DCLASS'
 
 # Some related environment variables
 DATA_FOLDER = 'DATA_FOLDER'
@@ -161,8 +176,21 @@ LABELS = {
     DOGPICK: 'Appion DoG',
     GCTF: "gCtf",
     GL2D: "GL2D",
-    EMAN_INITIAL: 'Eman Initial Volume',
-    RANSAC: 'Xmipp Ransac'
+    EMAN_INITIAL: 'Eman',
+    RANSAC: 'Xmipp Ransac',
+    CRYOS_2D: 'cryosparc2',
+    CRYOS_INIT: 'cryosparc2',
+    RELION_2D: 'Relion 2D',
+    RELION_3D: 'Relion 3D',
+    RELION_PICK: 'Relion LoG',
+    XMIPP_2D: 'Xmipp CL2D/GL2D',
+    SIGNIFICANT: 'Xmipp Significant',
+    SAMPLING_2D: '2D analysis pixel size',
+    SAMPLING_3D: '3D analysis pixel size',
+    DO_2DCLASS: 'Do 2D analysis',
+    DO_INITVOL: 'Estimate an Initial Volume',
+    DO_3DCLASS: 'Do 3D-heterogeneity analysis',
+    PARTS2CLASS: 'Minimum #particles to classify'
 }
 
 MANDATORY = [PATTERN, AMP_CONTR, SPH_AB, VOL_KV, SAMPLING, INV_CONTR]
@@ -336,11 +364,11 @@ class BoxWizardView(tk.Frame):
                              font=self.bigFont)
                 label2.grid(row=r, column=2, sticky='nw', padx=(5, 10), pady=2)
 
-        def _addCheckPair(key, r, lf, col=1, default=0):
+        def _addCheckPair(key, r, lf, col=1, default=0, bold=False):
             t = LABELS.get(key, key)
             var = tk.IntVar(value=default)
-
-            cb = tk.Checkbutton(lf, text=t, font=self.bigFont, bg='white',
+            fnt = self.bigFontBold if bold else self.bigFont
+            cb = tk.Checkbutton(lf, text=t, font=fnt , bg='white',
                                 variable=var)
             self.vars[key] = var
             self.checkvars.append(key)
@@ -366,7 +394,7 @@ class BoxWizardView(tk.Frame):
         
         _addPair(FRAMES, 0, labelFrame2, default='3-0', t2='ex: 2-15 (empty = all frames, 0 = last frame)')
         _addPair(DOSE0, 1, labelFrame2, default='0', t2='e/A^2')
-        _addPair(DOSEF, 2, labelFrame2, default='0', t2='(if 0, no dose weight is applied)')
+        _addPair(DOSEF, 2, labelFrame2, default='1.18', t2='(if 0, no dose weight is applied)')
 
 
         ### Picking parameters ###
@@ -376,15 +404,53 @@ class BoxWizardView(tk.Frame):
         
         _addPair(PARTSIZE, 0, labelFrame3, default='250', t2='Angstroms (if 0, manual picking is launched)')
         
+        _addPair("Protocols:", 1, labelFrame3, entry="else")
+        _addCheckPair(CRYOLO, 1, labelFrame3, default=1)
+        _addCheckPair(RELION_PICK, 1, labelFrame3, default=1, col=2)
         
-        ### Initial volume estimation ###
-        labelFrame4 = tk.LabelFrame(frame, text=' Initial volume estimation ', bg='white',
+        
+        ### 2D Classification ###
+        labelFrame4 = tk.LabelFrame(frame, text='', bg='white',
                                     font=self.bigFontBold)
         labelFrame4.grid(row=3, column=0, sticky='nw', padx=20, pady=10)
         
-        _addPair(SYMGROUP, 0, labelFrame4, t2='(if unknown, set at c1)', default='d2')
-        _addCheckPair(RANSAC, 1, labelFrame4, default=0)
-        _addCheckPair(EMAN_INITIAL, 1, labelFrame4, default=1, col=2)
+        _addCheckPair(DO_2DCLASS, 0, labelFrame4, default=1, bold=True, col=0)
+        _addPair(SAMPLING_2D, 1, labelFrame4, default='3', t2='A/pixel (-1 to keep original size)')
+        _addPair(PARTS2CLASS, 2, labelFrame4, default='3000')
+        
+        _addPair("Protocols:", 3, labelFrame4, entry="else")
+        _addCheckPair(RELION_2D, 3, labelFrame4, default=1)
+        _addCheckPair(XMIPP_2D, 3, labelFrame4, default=1, col=2)
+        _addCheckPair(CRYOS_2D, 3, labelFrame4, default=1, col=3)
+        
+        
+        ### Initial volume estimation ###
+        labelFrame5 = tk.LabelFrame(frame, text='', bg='white',
+                                    font=self.bigFontBold)
+        labelFrame5.grid(row=4, column=0, sticky='nw', padx=20, pady=10)
+        
+        _addCheckPair(DO_INITVOL, 0, labelFrame5, default=1, bold=True, col=0)
+        
+        _addPair(SYMGROUP, 1, labelFrame5, t2='(if unknown, set at c1)', default='d2')
+        
+        _addPair("Protocols:", 2, labelFrame5, entry="else")
+        _addCheckPair(EMAN_INITIAL, 2, labelFrame5, default=1)
+        _addCheckPair(SIGNIFICANT, 2, labelFrame5, default=1, col=2)
+        _addCheckPair(RANSAC, 2, labelFrame5, default=0, col=3)
+        
+        
+        
+        ### 3D Classification
+        labelFrame6 = tk.LabelFrame(frame, text='', bg='white',
+                                    font=self.bigFontBold)
+        labelFrame6.grid(row=5, column=0, sticky='nw', padx=20, pady=10)
+        
+        _addCheckPair(DO_3DCLASS, 0, labelFrame6, default=1, bold=True, col=0)
+        _addPair(SAMPLING_3D, 1, labelFrame6, default='1', t2='A/pixel (-1 to keep original size)')
+        
+        _addPair("Protocols:", 2, labelFrame6, entry="else")
+        _addCheckPair(RELION_3D, 2, labelFrame6, default=1)
+        _addCheckPair(CRYOS_INIT, 2, labelFrame6, default=1, col=2)
         
         
         
@@ -721,8 +787,6 @@ def preprocessWorkflow(project, dataPath, configDict):
                 protDotInput.set(lastProt)
                 protDotInput.setExtended(extended)
 
-    DOWNSAMPLED_SAMPLING = 2.
-
     # ***********   MOVIES   ***********************************************
     doDose = False if configDict.get(DOSEF, 0) == 0 else True
     gainGlob = pwutils.glob(pwutils.expandPattern(os.path.join(dataPath,
@@ -769,7 +833,9 @@ def preprocessWorkflow(project, dataPath, configDict):
                                      gpuList=configDict.get(MOTIONCOR2),
                                      numberOfMpi=mcMpi,
                                      doApplyDoseFilter=doDose,
+                                     doSaveUnweightedMic=not doDose,
                                      patchX=5, patchY=5,
+                                     extraParams2='-SumRange 0 0',  # To avoid DWS files
                                      alignFrame0=configDict.get(FRAMES, [1,0])[0],
                                      alignFrameN=configDict.get(FRAMES, [1,0])[1])
         setExtendedInput(protMA.inputMovies, protImport, 'outputMovies')
@@ -822,45 +888,51 @@ def preprocessWorkflow(project, dataPath, configDict):
         _registerProt(protCTF2)
 
     else:
-        protCTF2 = project.newProtocol(ProtCTFFind,
-                                       objLabel='GrigorieffLab - CTFfind',
-                                       numberOfThreads=numCpus)
-        setExtendedInput(protCTF2.inputMicrographs,
+        protCTF1 = project.newProtocol(XmippProtCTFMicrographs,
+                                       objLabel='Xmipp - ctf estimation',
+                                       #doInitialCTF=True
+                                       )
+        #setExtendedInput(protCTF1.ctfRelations, protCTF2, 'outputCTF')
+        setExtendedInput(protCTF1.inputMicrographs,
                          alignedMicsLastProt, alignMicsOutput)
-        _registerProt(protCTF2)
+        _registerProt(protCTF1)#, 'outputCTF')
 
     # --------- CTF ESTIMATION 1 ---------------------------
-    protCTF1 = project.newProtocol(XmippProtCTFMicrographs,
-                                   objLabel='Xmipp - ctf estimation')
+    protCTF1 = project.newProtocol(ProtCTFFind,
+                                   objLabel='GrigorieffLab - CTFfind',
+                                   numberOfThreads=numCpus)
     setExtendedInput(protCTF1.inputMicrographs,
                      alignedMicsLastProt, alignMicsOutput)
-    _registerProt(protCTF1)#, 'outputCTF')
+    _registerProt(protCTF1)
 
 
-    # --------- CTF CONSENSUS 1 ---------------------------
+    # --------- CTF CONSENSUS ---------------------------
     protCTFs = project.newProtocol(XmippProtCTFConsensus,
                                    objLabel='Xmipp - CTF consensus',
                                    useDefocus=True,
                                    useAstigmatism=True,
                                    useResolution=True,
                                    resolution=5,
-                                   useCritXmipp=True,
-                                   calculateConsensus=True,
+                                   useCritXmipp=False,  # !!!!!!!!!!!!!!
+                                   calculateConsensus=False,  # !!!!!!!!!!!!!!!!!
                                    minConsResol=7)
     setExtendedInput(protCTFs.inputCTF, protCTF2, 'outputCTF')
     setExtendedInput(protCTFs.inputCTF2, protCTF1, 'outputCTF')
     _registerProt(protCTFs, 'outputMicrographs')
 
     # *************   PICKING   ********************************************
-    # Resizing to a sampling rate larger than 3A/px
-    downSampPreMics = (float(DOWNSAMPLED_SAMPLING) / configDict.get(SAMPLING) 
-                       if configDict.get(SAMPLING) < DOWNSAMPLED_SAMPLING else 1)
+    # Resizing to a larger sampling rate
+    if (confDict.get(SAMPLING_2D, -1) > 0 and 
+        configDict.get(SAMPLING) < confDict.get(SAMPLING_2D)):
+        downSampPreMics = float(SAMPLING_2D) / configDict.get(SAMPLING) 
+    else:
+        downSampPreMics = 1
 
     # --------- PREPROCESS MICS ---------------------------
     protPreMics = project.newProtocol(XmippProtPreprocessMicrographs,
                                       objLabel='Xmipp - preprocess Mics',
                                       doRemoveBadPix=True,
-                                      doInvert=configDict.get(INV_CONTR),
+                                      doInvert=not configDict.get(INV_CONTR),
                                       doDownsample=downSampPreMics>1,
                                       downFactor=downSampPreMics)
     setExtendedInput(protPreMics.inputMicrographs,
@@ -915,12 +987,12 @@ def preprocessWorkflow(project, dataPath, configDict):
                      / downSampPreMics / 2 + 1) * 2
 
     # --------- PARTICLE PICKING 1 ---------------------------
-    if configDict.get(CRYOLO, -1) > -1 and SphireProtCRYOLO is not None:
+    if configDict.get(PARTSIZE, 0) != 0 and SphireProtCRYOLO is not None:  # configDict.get(CRYOLO, -1) > -1 and
         protPP2 = project.newProtocol(SphireProtCRYOLO,
                                       objLabel='Sphire - CrYolo auto-picking',
                                       boxSize=bxSize,
                                       conservPickVar=0.03,
-                                      gpuList=str(configDict.get(CRYOLO)))
+                                      gpuList='0')
         # setExtendedInput(protPP2.boxSize, protPrePick, 'boxsize', True)
         setExtendedInput(protPP2.inputMicrographs, protPreMics, 'outputMicrographs')
         if configDict.get(PARTSIZE, 0) == 0:
@@ -931,7 +1003,7 @@ def preprocessWorkflow(project, dataPath, configDict):
         pickersOuts.append('outputCoordinates')
         
     # --------- PARTICLE PICKING 2 ---------------------------
-    if configDict.get(PARTSIZE, 0) != 0 and SparxGaussianProtPicking is not None:  #configDict.get(SPARX, True)
+    if False and configDict.get(PARTSIZE, 0) != 0 and SparxGaussianProtPicking is not None:  #configDict.get(SPARX, True)
         protPP1 = project.newProtocol(SparxGaussianProtPicking,
                                       objLabel='Eman - Sparx auto-picking',
                                       lowerThreshold=0.02,
@@ -996,7 +1068,7 @@ def preprocessWorkflow(project, dataPath, configDict):
                                       downsampleType=0,  # Same as picking
                                       doRemoveDust=True,
                                       doNormalize=True,
-                                      doInvert=False,
+                                      doInvert=True,
                                       doFlip=True)
     setExtendedInput(protExtraOR.inputCoordinates,
                      finalPicker, outputCoordsStr)
@@ -1086,6 +1158,52 @@ def preprocessWorkflow(project, dataPath, configDict):
     setExtendedInput(protTRIG2.inputImages, protSCR, 'outputParticles')
     _registerProt(protTRIG2)
 
+    if ProtCryoSparc2D is not None and ProtCryoSparcInitialModel is not None:
+        protCryoSparc2D = project.newProtocol(ProtCryoSparc2D,
+                                              objLabel='Cryosparc2 - classify 2D',
+                                              numberOfClasses=16,
+                                              cacheParticlesSSD=False)
+        setExtendedInput(protCryoSparc2D.inputParticles, protTRIG2, 'outputParticles')
+        _registerProt(protCryoSparc2D)
+        
+        protCLSEL0 = project.newProtocol(XmippProtEliminateEmptyClasses,
+                                         objLabel='Xmipp - Auto class selection',
+                                         threshold=10.0,
+                                         usePopulation=False)
+        setExtendedInput(protCLSEL0.inputClasses, protCryoSparc2D, 'outputClasses')
+        _registerProt(protCLSEL0)#, 'outputAverages')
+        goodAvgs = [protCLSEL0]
+
+        symStr = configDict.get(SYMGROUP, 'c1')
+        if symStr.startswith('c'):
+            symGroup = 0
+            symOrder = int(symStr.lstrip('c'))
+        elif symStr.startswith('d'):
+            symGroup = 1
+            symOrder = int(symStr.lstrip('d'))
+        elif symStr == 't':
+            symGroup = 2
+        elif symStr == 'o':
+            symGroup = 3
+        elif symStr == 'i1':
+            symGroup = 4
+        elif symStr == 'i2':
+            symGroup = 5
+        
+        protCS2initVol = project.newProtocol(ProtCryoSparcInitialModel,
+                                             objLabel='Cryosparc2 - initial volume',
+                                             compute_use_ssd=False,
+                                             symmetryGroup=symGroup,
+                                             symmetryOrder=symOrder if symGroup < 2 else 1,
+                                             numberOfMpi=2,
+                                             numberOfThreads=2)
+        setExtendedInput(protCS2initVol.inputParticles, protTRIG2, 'outputParticles')
+        _registerProt(protCS2initVol)
+        cryosparcId = protCS2initVol.getObjId()
+    else:
+        cryosparcId = 0
+        goodAvgs = []
+
     # --------- XMIPP GL2D/CL2D ---------------------------
     if configDict.get(GL2D) > -1:
         gl2dMpi = numCpus if numCpus<32 else 32
@@ -1111,6 +1229,7 @@ def preprocessWorkflow(project, dataPath, configDict):
                                      usePopulation=False)
     setExtendedInput(protCLSEL1.inputClasses, protCL, 'outputClasses')
     _registerProt(protCLSEL1)#, 'outputAverages')
+    goodAvgs.append(protCLSEL1)
 
     # --------- Relion 2D classify ---------------------------
     relionCPUs = numCpus if configDict.get(RELION, -1) < 0 else 3
@@ -1132,12 +1251,12 @@ def preprocessWorkflow(project, dataPath, configDict):
                                      usePopulation=False)
     setExtendedInput(protCLSEL2.inputClasses, protCL2, 'outputClasses')
     _registerProt(protCLSEL2)#, 'outputAverages')
+    goodAvgs.append(protCLSEL2)
 
     # --------- JOIN SETS ---------------------------
     protJOIN = project.newProtocol(ProtUnionSet, objLabel='Scipion - Join good Averages')
     setExtendedInput(protJOIN.inputSets,
-                     [protCLSEL1, protCLSEL2],
-                     ['outputAverages', 'outputAverages'])
+                     goodAvgs, ['outputAverages']*len(goodAvgs))
     _registerProt(protJOIN)
 
     # ***************   INITIAL VOLUME   ***********************************
@@ -1146,19 +1265,25 @@ def preprocessWorkflow(project, dataPath, configDict):
     protSIG = project.newProtocol(XmippProtReconstructSignificant,
                                   objLabel='Xmipp - Recons. significant',
                                   symmetryGroup=configDict.get(SYMGROUP, 'c1'),
-                                  numberOfMpi=numCpusSig)
+                                  numberOfMpi=numCpusSig,
+                                  iter=35)
     setExtendedInput(protSIG.inputSet, protJOIN, 'outputSet')
     _registerProt(protSIG)
     initVolDeps = protSIG.getObjId()
     initVols = [protSIG]
     initVolsOuts = ['outputVolume']
     
+    # FIXME: do it better!!
+    initVols.append(protCS2initVol)
+    initVolsOuts.append('outputVolumes')
+    
     # --------- EMAN INIT VOLUME ---------------------------
     if configDict.get(EMAN_INITIAL, True):
         protINITVOL = project.newProtocol(EmanProtInitModel,
                                           objLabel='Eman - Initial vol',
                                           symmetry=configDict.get(SYMGROUP, 'c1'),
-                                          numberOfThreads=4)
+                                          numberOfThreads=4,
+                                          numberOfModels=7)
         setExtendedInput(protINITVOL.inputSet, protJOIN, 'outputSet')
         # protINITVOL.addPrerequisites(initVolDeps)
         _registerProt(protINITVOL)
@@ -1193,7 +1318,8 @@ def preprocessWorkflow(project, dataPath, configDict):
         protSWARM = project.newProtocol(XmippProtReconstructSwarm,
                                         objLabel='Xmipp - Swarm init. vol.',
                                         symmetryGroup=configDict.get(SYMGROUP, 'c1'),
-                                        numberOfMpi=numCpus)
+                                        numberOfMpi=numCpus,
+                                        numberOfIterations=5)
         setExtendedInput(protSWARM.inputParticles, protTRIG2, 'outputParticles')
         setExtendedInput(protSWARM.inputVolumes, protAVOL, 'outputVolumes')
         _registerProt(protSWARM)#, 'outputVolume')
@@ -1247,7 +1373,7 @@ def preprocessWorkflow(project, dataPath, configDict):
     # # -------------------------- FULL SIZE PROTOCOLS -----
     # --------- RESIZE THE INITIAL VOL TO FULL SIZE ----------
     bxSizeFull = int(configDict.get(PARTSIZE)/configDict.get(SAMPLING)/2+1)*2
-    if configDict.get(SAMPLING) < DOWNSAMPLED_SAMPLING:
+    if configDict.get(SAMPLING) < configDict.get(SAMPLING_2D):
         protVOLfull = project.newProtocol(XmippProtCropResizeVolumes,
                                           objLabel='Resize volume - FULL SIZE',
                                           doResize=True,
