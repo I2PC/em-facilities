@@ -64,7 +64,7 @@ print "Cleaning output directory: ", outputDir
 pwutils.cleanPath(outputDir)
 pwutils.makePath(outputDir)
 
-
+os.system("touch /tmp/scipion/simulation_%d" % (os.getpid()))
 
 aTime = int(delay)
 n = 5
