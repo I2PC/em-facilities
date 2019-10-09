@@ -25,7 +25,7 @@ function runJob(){
 # LAUNCHER
 
 # make and clean the token
-if ! ls $tokenDir 2>/dev/null ; then mkdir $tokenDir ; fi
+if ! ls $tokenDir >>/dev/null 2>/dev/null ; then mkdir $tokenDir ; fi
 rm $tokenPattern 2>/dev/null
 
 # Launch the acquisition form and start the simulation
@@ -33,19 +33,23 @@ $preCommands &
 runJob $scipionBin python $launcherScript
 
 # Getting project name form token
-ls $tokenPattern 2>/dev/null &&
+ls $tokenPattern >>/dev/null 2>/dev/null &&
 projectToken=$(ls $tokenPattern) &&
 project="${projectToken#*_}" &&
 rm $tokenPattern
 
-# Scheduling the whole project
-runJob $scipionBin python schedule_project.py $project &
+if [ "$project" ]
+then
+  # Scheduling the whole project
+  #runJob $scipionBin python schedule_project.py $project &
 
-# Launch Scipion project using the token
-runJob $scipionWrapper $scipionBin project $project
+  # Launch Scipion project using the token
+  runJob $scipionWrapper $scipionBin project $project
+fi
 
 # Getting simulation's pid to kill it
-ls $pidPattern 2>/dev/null &&
+ls $pidPattern >>/dev/null 2>/dev/null &&
 pidToken=$(ls $pidPattern) &&
+echo "Stopping the simulation..." &&
 kill -9 "${pidToken#*_}" &&
 rm $pidToken

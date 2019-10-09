@@ -27,7 +27,7 @@
 #   ---   CONSTANTS   ---   #
 WINDOWS_TITLE = 'WINDOWS_TITLE'
 VIEW_WIZARD = 'wizardview'
-# PROJECT_PATH = 'PROJECT_PATH'
+PROJECT_PATH = 'PROJECT_PATH'
 
 # - conf - #
 DEPOSITION_PATTERN = 'DEPOSITION_PATTERN'
@@ -46,6 +46,7 @@ NUM_CPU = 'NUM_CPU'
 
 # Form fields
 PROJECT_NAME = "PROJECT_NAME"
+ASK_ALL = 'ASK_ALL'
 
 MOTIONCOR2_GPU = "MOTIONCOR2_GPU"
 FRAMES = "FRAMES"
@@ -77,6 +78,7 @@ RELION_GPU = 'RELION_GPU'
 XMIPP_2D = 'XMIPP_2D'
 GL2D_GPU = 'GL2D_GPU'
 CRYOS_2D = 'CRYOS_2D'
+USE_CRYOS_SSD = 'USE_CRYOS_SSD'
 
 DO_INITVOL = 'DO_INITVOL'
 ASK_SYMGROUP = 'ASK_SYMGROUP'
@@ -89,10 +91,17 @@ RANSAC = 'RANSAC'
 DO_3DCLASS = 'DO_3DCLASS'
 ASK_3DSAMP = 'ASK_3DSAMP'
 SAMPLING_3D = 'SAMPLING_3D'
+ASK_PARTS3D = 'ASK_PARTS3D'
+PARTS3D = 'PARTS3D'
 ASK_3D_PROT = 'ASK_3D_PROT'
-CRYOS_INIT = 'CRYOS_INIT'
-RELION_3D = 'RELION_3D'
+CRYOS_3D = 'CRYOS_3D'
+RELION_REFINE = 'RELION_REFINE'
+RELION_3DCL = 'RELION_3DCL'
 
+DO_FULLSIZE = 'DO_FULLSIZE'
+ASK_FULLSIZE = 'ASK_FULLSIZE'
+
+ASK_RESOURCES = 'ASK_RESOURCES'
 
 # Some related environment variables
 DATA_FOLDER = 'DATA_FOLDER'
@@ -123,9 +132,10 @@ LABELS = {
     EMAN_INITIAL: 'Eman',
     RANSAC: 'Xmipp Ransac',
     CRYOS_2D: 'cryosparc2',
-    CRYOS_INIT: 'cryosparc2',
+    CRYOS_3D: 'cryosparc2',
     RELION_2D: 'Relion 2D',
-    RELION_3D: 'Relion 3D',
+    RELION_REFINE: 'Relion auto-refine',
+    RELION_3DCL: 'Relion 3D classification',
     RELION_PICK: 'Relion LoG',
     XMIPP_2D: 'Xmipp CL2D/GL2D',
     SIGNIFICANT: 'Xmipp Significant',
@@ -133,28 +143,31 @@ LABELS = {
     SAMPLING_3D: '3D analysis pixel size',
     DO_2DCLASS: 'Do 2D analysis',
     DO_INITVOL: 'Estimate an Initial Volume',
-    DO_3DCLASS: 'Do 3D-heterogeneity analysis',
-    PARTS2CLASS: 'Minimum #particles to classify'
+    DO_3DCLASS: 'Do 3D analysis',
+    DO_FULLSIZE: 'Extract particles at FULL resolution',
+    PARTS2CLASS: '# particles to classify',
+    PARTS3D: '# particles for 3D analysis',
 }
 
-# Make a specific casting to form parameters (if not, using the default type)
+# Make a specific casting to FORM parameters (if not, using the default type)
 formatsParameters = {PARTSIZE: int,
                      SYMGROUP: str,
                      FRAMES: 'splitInt',
                      DOSE0: float,
                      DOSEF: float,
-                     # OPTICAL_FLOW: bool,
-                     # SPARX: bool,
-                     # DOGPICK: bool,
+                     OPTICAL_FLOW: bool,
+                     SPARX: bool,
+                     DOGPICK: bool,
                      EMAN_INITIAL: bool,
                      RANSAC: bool,
                      SAMPLING: float,
                      SAMPLING_2D: float,
-                     SAMPLING_3D: float}
+                     SAMPLING_3D: float,
+                     PARTS3D: int,
+                     }
 
 
 #   ---   CONFIG FILEDS   ---
-
 # Default values
 defaultVals = {SIMULATION: False,
                RAWDATA_SIM: '',
@@ -162,7 +175,7 @@ defaultVals = {SIMULATION: False,
                TIMEOUT: 60,
                NUM_CPU: -1,
                PARTS2CLASS: 5000,
-               WAIT2PICK: True
+               WAIT2PICK: True,
                }
 
 # Default values of certain config parameters and its casting,
@@ -181,9 +194,11 @@ formatConfParameters = [(SIMULATION, bool, False),
                         (NUM_CPU, int, -1),
                         (MICS2PICK, int, 10),
                         (MOTIONCOR2_GPU, str, '2,3'),
-                        (GCTF_GPU, int, 2),
+                        (GCTF_GPU, str, '2'),
                         (CRYOLO, bool, True),
-                        (RELION_GPU, int, 1),
-                        (GL2D_GPU, int, 0),
+                        (RELION_GPU, str, '1'),
+                        (GL2D_GPU, str, '0'),
                         (PARTS2CLASS, int, 5000),
-                        (WAIT2PICK, bool, False)]
+                        (WAIT2PICK, bool, False),
+                        (OPTICAL_FLOW, bool, False),
+                        ]

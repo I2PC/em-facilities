@@ -80,7 +80,7 @@ class BoxWizardView(tk.Frame):
         self.microscope = None
         self.configDict = self.windows.config
         # Regular expression to validate username and sample name
-        self.re = re.compile('\A[a-zA-Z0-9][a-zA-Z0-9_-]+\Z')
+        self.re = re.compile('\A[a-zA-Z0-9][a-zA-Z0-9_-]+[a-zA-Z0-9]\Z')
         
         # tkFont.Font(size=12, family='verdana', weight='bold')
         bigSize = pwgui.cfgFontSize + 2
@@ -137,7 +137,7 @@ class BoxWizardView(tk.Frame):
     def _fillContent(self, frame):
 
         def _addPair(key, lf, r, entry='text', traceCallback=None, mouseBind=False,
-                     color='white', width=5, col=0, t1='', t2='', default=''):
+                     color='white', width=8, col=0, t1='', t2='', default=''):
             t = LABELS.get(key, key)
 
             label = tk.Label(lf, text=t, bg='white', font=self.bigFont)
@@ -179,7 +179,7 @@ class BoxWizardView(tk.Frame):
 
         def _addCheckPair(key, lf, r, col=1, default=0, bold=False):
             t = LABELS.get(key, key)
-            var = tk.IntVar(value=self.getConfValue(key, default))
+            var = tk.BooleanVar(value=self.getConfValue(key, default))
             fnt = self.bigFontBold if bold else self.bigFont
             cb = tk.Checkbutton(lf, text=t, font=fnt, bg='white',
                                 variable=var)
@@ -230,71 +230,98 @@ class BoxWizardView(tk.Frame):
         labelFrame3, lastSection = _addSection(lastSection+1,
                                                text=' Picking parameters ')
         lastRow = -1
-        if self.getConfValue(ASK_PARTSIZE, True):
+        if self.getConfValue(ASK_PARTSIZE, True) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair(PARTSIZE, labelFrame3, lastRow+1, default='250',
                                t2='Angstroms (if 0, manual picking is launched)')
-        if self.getConfValue(ASK_MICS2PIC, False):
+        if self.getConfValue(ASK_MICS2PIC, False) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair(MICS2PICK, labelFrame3, lastRow+1, default='10',
                                t2=' (if 0, automatic sample size estimation)')
-        if self.getConfValue(ASK_PICK_PROT, False):
+        if self.getConfValue(ASK_PICK_PROT, False) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair("Protocols:", labelFrame3, lastRow+1, entry="else")
-            lastRow, c = _addCheckPair(CRYOLO, labelFrame3, lastRow, default=1)
+            lastRow, c = _addCheckPair(CRYOLO, labelFrame3, lastRow, default=True)
             lastRow, c = _addCheckPair(RELION_PICK, labelFrame3, lastRow,
-                                       default=1, col=c+1)
+                                       default=True, col=c+1)
+            # lastRow, c = _addCheckPair(DOGPICK, labelFrame3, lastRow+1,
+            #                            default=True)
+            # lastRow, c = _addCheckPair(SPARX, labelFrame3, lastRow, col=2,
+            #                            default=True)
         
         
         ### 2D Classification ###
         labelFrame4, lastSection = _addSection(lastSection+1, text='')
-        lastRow = _addCheckPair(DO_2DCLASS, labelFrame4, 0, default=1,
+        lastRow = _addCheckPair(DO_2DCLASS, labelFrame4, 0, default=True,
                                 bold=True, col=0)
 
-        if self.getConfValue(ASK_2DSAMP, True):
+        if self.getConfValue(ASK_2DSAMP, True) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair(SAMPLING_2D, labelFrame4, lastRow+1, default='3',
                                t2='A/pixel (-1 to keep original size)')
-        if self.getConfValue(ASK_PARTS2CLASS, True):
+        if self.getConfValue(ASK_PARTS2CLASS, True) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair(PARTS2CLASS, labelFrame4, lastRow+1, default='3000')
-        if self.getConfValue(ASK_2D_PROT, False):
+        if self.getConfValue(ASK_2D_PROT, False) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair("Protocols:", labelFrame4, lastRow+1, entry="else")
-            lastRow, c = _addCheckPair(RELION_2D, labelFrame4, lastRow, default=1)
-            lastRow, c = _addCheckPair(XMIPP_2D, labelFrame4, lastRow, default=1, col=c+1)
-            lastRow, c = _addCheckPair(CRYOS_2D, labelFrame4, lastRow, default=1, col=c+1)
+            lastRow, c = _addCheckPair(RELION_2D, labelFrame4, lastRow, default=True)
+            lastRow, c = _addCheckPair(XMIPP_2D, labelFrame4, lastRow, default=True, col=c+1)
+            lastRow, c = _addCheckPair(CRYOS_2D, labelFrame4, lastRow, default=True, col=c+1)
         
         
         ### Initial volume estimation ###
         labelFrame5, lastSection = _addSection(lastSection+1, text='')
-        lastRow = _addCheckPair(DO_INITVOL, labelFrame5, 0, default=1,
+        lastRow = _addCheckPair(DO_INITVOL, labelFrame5, 0, default=True,
                                 bold=True, col=0)
 
-        if self.getConfValue(ASK_SYMGROUP, True):
+        if self.getConfValue(ASK_SYMGROUP, True) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair(SYMGROUP, labelFrame5, lastRow+1,
                                t2='(if unknown, set at c1)', default='d2')
-        if self.getConfValue(ASK_INITVOL_PROT, False):
+        if self.getConfValue(ASK_INITVOL_PROT, False) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair("Protocols:", labelFrame5, lastRow+1, entry="else")
-            lastRow, c = _addCheckPair(EMAN_INITIAL, labelFrame5, lastRow, default=1)
-            lastRow, c = _addCheckPair(SIGNIFICANT, labelFrame5, lastRow, default=1, col=c+1)
-            lastRow, c = _addCheckPair(RANSAC, labelFrame5, lastRow, default=0, col=c+1)
+            lastRow, c = _addCheckPair(EMAN_INITIAL, labelFrame5, lastRow, default=True)
+            lastRow, c = _addCheckPair(SIGNIFICANT, labelFrame5, lastRow, default=True, col=c+1)
+            lastRow, c = _addCheckPair(RANSAC, labelFrame5, lastRow, default=False, col=c+1)
 
         
         ### 3D Classification
         labelFrame6, lastSection = _addSection(lastSection+1, text='')
-        lastRow = _addCheckPair(DO_3DCLASS, labelFrame6, 0, default=1,
+        lastRow = _addCheckPair(DO_3DCLASS, labelFrame6, 0, default=True,
                                 bold=True, col=0)
 
-        if self.getConfValue(ASK_3DSAMP, True):
+        if self.getConfValue(ASK_3DSAMP, True) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair(SAMPLING_3D, labelFrame6, lastRow+1, default='1',
                                t2='A/pixel (-1 to keep original size)')
-        if self.getConfValue(ASK_3D_PROT, True):
+        if self.getConfValue(ASK_PARTS3D, True) or self.getConfValue(ASK_ALL, False):
+            lastRow = _addPair(PARTS3D, labelFrame6, lastRow+1, default='10000',
+                               t2='(-1 for an automatic value)')
+        if self.getConfValue(ASK_3D_PROT, True) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair("Protocols:", labelFrame6, lastRow+1, entry="else")
-            lastRow, c = _addCheckPair(RELION_3D, labelFrame6, lastRow, default=1)
-            lastRow, c = _addCheckPair(CRYOS_INIT, labelFrame6, lastRow, default=1, col=c+1)
-        
-        
+            lastRow, c = _addCheckPair(RELION_REFINE, labelFrame6, lastRow, default=True)
+            lastRow, c = _addCheckPair(RELION_3DCL, labelFrame6, lastRow, default=True, col=c+1)
+            lastRow, c = _addCheckPair(CRYOS_3D, labelFrame6, lastRow+1, default=True)
+
+
+        ### Extract particles FULL SIZE
+        if self.getConfValue(ASK_FULLSIZE, False) or self.getConfValue(ASK_ALL, False):
+            labelFrame7, lastSection = _addSection(lastSection+1, text='')
+            lastRow = _addCheckPair(DO_FULLSIZE, labelFrame6, 0, default=True,
+                                    bold=True, col=0)
+
+        ### RESOURCES
+        if self.getConfValue(ASK_RESOURCES, False) or self.getConfValue(ASK_ALL, False):
+            labelFrame7, lastSection = _addSection(lastSection+1,
+                                                   text=' GPU Resources ')
+            lastRow = _addPair("Protocols", labelFrame7, 0, entry="else",
+                               t1='GPU id', t2="(-1 to use the alternative below)")
+            lastRow = _addPair(MOTIONCOR2_GPU, labelFrame7, lastRow+1,
+                               t2="(if not, Xmipp will be used)", default='2-3')
+            lastRow = _addPair(GCTF_GPU, labelFrame7, lastRow+1, default='2',
+                               t2="(if not, ctfFind4 will be used)")
+            lastRow = _addPair(RELION_GPU, labelFrame7, lastRow+1, default='1',
+                               t2="(if not, Relion with CPU will be used)")
+            lastRow = _addPair(GL2D_GPU, labelFrame7, lastRow+1, default='0',
+                               t2="(if not, streaming 2D class in batches)")
         
         # _addPair(MICS2PICK, 4, labelFrame2, t2='(if 0, only automatic picking is done)')
 
         #_addPair('Optional protocols:', 5, labelFrame2, entry='empty')
-        #_addCheckPair(DOGPICK, 5, labelFrame2, default=1)
-        #_addCheckPair(SPARX, 5, labelFrame2, col=2, default=1)
+
 
         #labelFrame3 = tk.LabelFrame(frame, text=' GPU usage ', bg='white',
         #                            font=self.bigFontBold)
@@ -316,51 +343,21 @@ class BoxWizardView(tk.Frame):
         errors = []
 
         # Check form parameters
-        dataFolder = self.getConfValue(DEPOSITION_DIR)
-        if not os.path.exists(dataFolder):
-            errors.append("Data folder '%s' does not exists. "
-                          "Check config file." % dataFolder)
+        errors = self.checkNames(errors)
 
-        userName = self._getUserName()
-        if self.re.match(userName.strip()) is None:
-            errors.append("Wrong username")
-        
-        sampleName = self._getSampleName()
-        if self.re.match(sampleName.strip()) is None:
-            errors.append("Wrong sample name")
-
-        # Loading all vars in the form
+        # Loading all vars in the form and check types
         errors = self.castParameters(errors)
+        fullProjPath = os.path.join(self.getConfValue(PROJECT_PATH),
+                                    self.getConfValue(PROJECT_NAME))
+        if not errors:
+            # Check project path only if no problems with project name
+            if os.path.exists(fullProjPath):
+                errors.append("Project '%s' already exists.\n"
+                              "Change User or Sample name" % fullProjPath)
 
         if not errors:
-            scipionProjPath = os.path.join(os.environ.get('SCIPION_USER_DATA'),
-                                           'projects')
-            projName = self.getConfValue(PROJECT_NAME)
-            projectPath = os.path.join(scipionProjPath, projName)
-            if os.path.exists(projectPath):
-                errors.append("Project '%s' already exists.\n"
-                              "Change User or Sample name" % projName)
-            # else:
-            #     self.setConfValue(PROJECT_PATH, projectPath)
-
-        # Do more checks only if there are not previous errors
-        # if not errors:
-            #if (not self.getConfigValue(SPARX, True) and
-            #    not self.getConfigValue(DOGPICK, True) and
-            #        self.getConfigValue(PARTSIZE) != 0 and
-            #        self.getConfigValue(CRYOLO) < 0):
-            #    errors.append("At least, one picker is needed. "
-            #                  "Choose DoG picker, Sparx, crYOLO or "
-            #                  "fix particle size to 0 for manual picking.")
-
-            # self.setConfigValue(PROJECT_NAME, self._getProjectName())
-            # dataPath = os.path.join(dataFolder, projName)
-
-            # if not len(pwutils.glob(os.path.join(dataPath,
-            #                                     self.getConfigValue(PATTERN)))):
-            #     errors.append("No file found in %s.\n"
-            #                   "Make sure that the acquisition has been started."
-            #                   % os.path.join(dataPath, self.getConfigValue(PATTERN)))
+            # Do more checks only if there are not previous errors
+            errors = self.checkWorkflowParams()
 
         if errors:
             errors.insert(0, "*Errors*:")
@@ -375,21 +372,30 @@ class BoxWizardView(tk.Frame):
             #                      stderr=open('logfile_err.log', 'w')
             #                      )
             # print projName, dataPath, scipionProjPath
+            try:
+                self._createScipionProject()
+                close = True
+            except Exception as exc:
+                errorStr = ("\nSome error occurred while "
+                            "creating the project: \n !! %s !!" % exc)
+                print(errorStr)
+                print(" > Removing that failed project: (rm -rf %s)\n" % fullProjPath)
+                os.system("rm -rf %s" % fullProjPath)
+                self.windows.showError(errorStr)
+                close = False
+                raise
+            if close: self.windows.close()
 
-            self._createScipionProject()
-            self.windows.close()
-
-    
     def _createScipionProject(self):
 
         dataPath = self.getConfValue(DEPOSITION_PATTERN)
         projectName = self.getConfValue(PROJECT_NAME)
-        # projectPath = self.getConfValue(PROJECT_PATH)
+        projectPath = os.path.join(self.getConfValue(PROJECT_PATH), projectName)
 
         print("")
-        print("Deposition Path: %s" % dataPath)
+        print("Deposition Pattern: %s" % dataPath)
         print("Project Name: %s" % projectName)
-        # print("Project Path: %s" % projectPath)
+        print("Project Path: %s" % projectPath)
 
         # Launch the simulation
         if self.getConfValue(SIMULATION):
@@ -402,22 +408,20 @@ class BoxWizardView(tk.Frame):
             subprocess.Popen('%s python %s "%s" %s %d %s &'
                              % (pw.getScipionScript(),
                                 'simulate_acquisition.py',
-                                rawDataPath, dataPath,
+                                rawDataPath, self.getConfValue(DEPOSITION_DIR),
                                 self.getConfValue(TIMEOUT),
                                 gainPath), shell=True)
             time.sleep(1)
 
         # Check if there are something to process
         count = 1
-        while not len(pwutils.glob(os.path.join(dataPath,
-                                                self.getConfValue(PATTERN)))):
+        while not len(pwutils.glob(dataPath)):
             if count == 6:
                 self.windows.close()
 
             string = ("No file found in %s.\n"
                       "Make sure that the acquisition has been started.\n\n"
-                      % os.path.join(dataPath,
-                                     self.getConfValue(PATTERN)))
+                      % dataPath)
             if count < 5:
                 str2 = "Retrying... (%s/5)" % count
             else:
@@ -433,20 +437,10 @@ class BoxWizardView(tk.Frame):
 
         os.system('touch /tmp/scipion/project_%s' % projectName)
 
-        # ignoreOption = '' # '--ignore XmippProtParticlePicking XmippProtConsensusPicking'
-        #                # ('' if (self._getConfValue(WAIT2PICK) == 'False' or
-        #                #         self._getConfValue(PARTSIZE, 0) == 0) else
-        #                #  '--ignore XmippProtParticlePicking '
-        #                #           'XmippParticlePickingAutomatic '
-        #                #           'XmippProtConsensusPicking ')
-        #
-        #
-        #
+        # ignoreOption = '' # '--ignore XmippProtParticlePicking'
         # os.system('%s python %s %s %s &' % (pw.getScipionScript(),
         #                                    'schedule_project.py',
         #                                     projName, ignoreOption))
-
-        #os.system('%s project %s &' % (pw.getScipionScript(), projName))
 
     def getConfValue(self, key, default=None):
         return self.configDict.get(key, default)
@@ -491,45 +485,65 @@ class BoxWizardView(tk.Frame):
         return usr
 
     def _onInputChange(self, *args):
-        # Quick and dirty trick to skip this function first time
-        # if SAMPLE_NAME not in self.vars:
-        #     return
         self._setValue(PROJECT_NAME, self._getProjectName())
 
-    def _createDataFolder(self, projPath, scipionProjPath):
-        def _createPath(p):
-            # Create the project path
-            sys.stdout.write("Creating path '%s' ... " % p)
-            pwutils.makePath(p)
-            sys.stdout.write("DONE\n")
+    def checkNames(self, errors):
+        dataFolder = self.getConfValue(DEPOSITION_DIR)
+        if not os.path.exists(dataFolder):
+            errors.append("Data folder '%s' does not exists. "
+                          "Check config file." % dataFolder)
+        userName = self._getUserName()
+        if self.re.match(userName.strip()) is None:
+            errors.append("Wrong username")
+        sampleName = self._getSampleName()
+        if self.re.match(sampleName.strip()) is None:
+            errors.append("Wrong sample name")
+        return errors
 
-        _createPath(scipionProjPath)
+    def checkWorkflowParams(self):
+        errors = []
 
-    # def castConf(self):
-    #     print("Getting config parameters and its casting:")
-    #     for k, v in self.windows.config.iteritems():
-    #
-    #     for var, cast, default in formatConfParameters:  # be aware with mandatory!!
-    #         value = self.windows.config.get(var, default)
-    #         if cast == 'splitTimesFloat':
-    #             if "*" in value:
-    #                 newvar = reduce(lambda x, y: float(x) * float(y), value.split('*'))
-    #             elif "/" in value:
-    #                 newvar = reduce(lambda x, y: float(x) / float(y), value.split('/'))
-    #             else:
-    #                 newvar = float(value)
-    #         elif cast == bool:
-    #             newvar = True if value.lower() == 'True'.lower() else False
-    #         elif cast == 'path':
-    #             newvar = pwutils.expandPattern(value)
-    #         else:
-    #             newvar = cast(value)
-    #         print(" - %s (%s): %s %s" % (var, value, type(newvar), newvar))
-    #         self.setConfValue(var, newvar)
-    #     print('')
+        if not errors:
+            self.checkPickingParameters(errors)
+
+        if not errors:
+            self.check2DParameters(errors)
+
+
+        if errors:
+            outErr = ['Some incompatible parameters found:']
+            return outErr + errors
+        else:
+            return errors
+
+    def checkPickingParameters(self, errors):
+        errors = []
+        if (not self.getConfValue(CRYOLO) and
+            not self.getConfValue(RELION_PICK) and
+            # not self.getConfValue(SPARX) and
+            # not self.getConfValue(DOGPICK) and
+            self.getConfValue(PARTSIZE) != 0):
+            errors.append("At least, one picker is needed. "
+                        "Choose crYOLO or Relion LoG, or "
+                        "fix the particle size to 0 for a manual picking.")
+            return errors
+
+        if (self.getConfValue(PARTSIZE) == 0 and
+            self.getConfValue(MICS2PICK) == 0):
+            errors.append("If no partivle size is provides, "
+                          "a manual picking must be done. "
+                          "Thus, please indicate some mics to manula pick "
+                          "(MICS2PIC in config file)")
+            return errors
+
+        return errors
+
+    def check2DParameters(self, errors):
+        pass
+
 
     def castParameters(self, errors):
-        print(" ...and from form:")
+        print("Getting parameters form the form:")
         for var in self.vars:
             try:
                 cast = formatsParameters.get(var, 'default')
@@ -545,9 +559,7 @@ class BoxWizardView(tk.Frame):
                         aux = ['0', '0']
                         errors.append("'%s' is not well formated (ie. 2-15)"
                                       % LABELS.get(var))
-                    newvar = []
-                    for item in aux:
-                        newvar.append(int(item))
+                    newvar = [int(item) for item in aux]
                 else:
                     if value == '':
                         value = 0
@@ -568,14 +580,18 @@ class BoxWizardView(tk.Frame):
             # We classify the acquisitions in projects when simulation
             self.setConfValue(DEPOSITION_DIR,
                               os.path.join(self.getConfValue(DEPOSITION_DIR),
-                                             self.getConfValue(PROJECT_NAME)))
+                                           self.getConfValue(PROJECT_NAME)))
         if DEPOSITION_PATTERN not in self.configDict:
             # The pattern can be token from the environ
             pattern = os.path.join(self.getConfValue(DEPOSITION_DIR),
                                    os.environ.get(PATTERN,
                                                   self.getConfValue(PATTERN)))
             self.setConfValue(DEPOSITION_PATTERN, pattern)
-
+        if PROJECT_PATH not in self.configDict:
+            scipionProjPath = os.path.join(os.environ.get('SCIPION_USER_DATA'),
+                                           'projects')
+            self.setConfValue(PROJECT_PATH, scipionProjPath)
+        print("\n -------------------- \n")
         return errors
 
 def createDictFromConfig(confFile):
@@ -614,17 +630,8 @@ def createDictFromConfig(confFile):
         print("\n - %s section - " % section)
         for opt in cp.options(section):
             value = cp.get(section, opt)
-            if opt in [k for k, c, d in formatConfParameters]:
-                # apply a certain casting if so
-                newValue = castConf(opt, value)
-            elif value.isdigit():
-                # transform to integer if so
-                newValue = int(value)
-            else:
-                try:  # to transform to float (1.234, 1.32E-4...)
-                    newValue = float(value)
-                except ValueError:
-                    newValue = value
+            # apply a certain casting
+            newValue = castConf(opt, value)
             print("     %s (%s): %s %s" % (opt, value, type(newValue), newValue))
             confDict[opt] = newValue
     print('\n -------------------- \n')
@@ -635,8 +642,14 @@ def createDictFromConfig(confFile):
     return confDict
 
 def castConf(var, value):
-    """ Casting definitions for config parameters. """
-    cast = [c for k, c, d in formatConfParameters if k == var][0]
+    """ Casting definitions for config parameters.
+    """
+    castList = [c for k, c, d in formatConfParameters if k == var]
+    if castList:
+        cast = castList[0]
+    else:
+        cast = 'default'
+
     if cast == 'splitTimesFloat':
         if "*" in value:
             newvar = reduce(lambda x, y: float(x) * float(y), value.split('*'))
@@ -645,10 +658,25 @@ def castConf(var, value):
         else:
             newvar = float(value)
     elif cast == bool:
-        newvar = False if (value.lower() == 'False'.lower() or
-                           value == '0' or value.lower() == 'No'.lower()) else True
+        try:
+            newvar = int(value) > 0
+        except:
+            newvar = False if value.lower() == 'false' else True
     elif cast == 'path':
         newvar = pwutils.expandPattern(value)
+    elif cast == 'default':
+        if value.lower() == 'true':
+            newvar = True
+        elif value.lower() == 'false':
+            newvar = False
+        else:
+            try:  # to transform to int: '-1'.isdigit() = False...
+                newvar = int(value)
+            except:
+                try:  # to transform to float (1.234, 1.32E-4...)
+                    newvar = float(value)
+                except ValueError:
+                    newvar = value
     else:
         newvar = cast(value)
     return newvar
