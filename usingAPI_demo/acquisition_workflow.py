@@ -35,7 +35,7 @@ import pyworkflow.utils as pwutils
 from pyworkflow.object import Pointer
 from pyworkflow.em.protocol import (ProtImportMovies, ProtMonitorSummary,
                                     ProtUnionSet, ProtMonitor2dStreamer,
-                                    ProtSubSet)
+                                    ProtSubSet, ProtExtractCoords)
 
 try:  # Xmipp plugin is mandatory to run this workflow
     from xmipp3.protocols import (XmippProtOFAlignment, XmippProtMovieGain,
@@ -100,23 +100,37 @@ def preprocessWorkflow(configDict):
         except:
             numCpus = 8
 
-    def getGpuArray(var, asStr=False):
-        """ Get an array pointing to the GPUs set for that protocol.
-              examples:
+    def getGpuArray(var):
+        """ Get the a int list pointing to the GPUs for that protocol.
+              output examples:
                 - noGPU assigned: []
                 - id assigned: [id]
                 - multiple GPU assignation: [id1, id2, ...]
         """
         value = get(var, '-1')
+        
         try:
-            aux = int(value)
-            value = [aux] if aux > -1 else []
+            auxI = int(value)
+            array = [] if auxI < 0 else [auxI]
         except:
-            if '-' in value:
-                value = value.split('-')
-            else:
-                value = []
-        return value if not asStr else [str(x) for x in value]
+            array = []
+            for delim in [',', ':', '-']:
+                if delim in value:
+                    array = [int(x) for x in value.split(delim)]
+                
+        return array
+            
+    def getGpu(var):
+        """ Get the valit string pointing to the GPUs for that protocol.
+              output examples:
+                - noGPU assigned: None
+                - id assigned: 'id'
+                - multiple GPU assignation: 'id1, id2, ...'
+        """
+        if getGpuArray(var):
+            return get(var)
+        else:
+            return None
 
     def getRelionMPI(confVar=RELION_GPU):
         gpuList = getGpuArray(confVar)
@@ -177,28 +191,28 @@ def preprocessWorkflow(configDict):
     protMG = project.newProtocol(XmippProtMovieGain,
                                  objLabel='Xmipp - movie gain',
                                  frameStep=5,
-                                 movieStep=20,
-                                 useExistingGainImage=False)
+                                 movieStep=40,
+                                 estimateOrientation=True)
     setExtendedInput(protMG.inputMovies, protImport, 'outputMovies')
     _registerProt(protMG, True)
 
     # ----------- MOTIONCOR ----------------------------
     frame0 = get(FRAMES, [1, 0])[0]
     frameF = get(FRAMES, [1, 0])[1]
-    if getGpuArray(MOTIONCOR2_GPU):
+    if getGpu(MOTIONCOR2_GPU):
         mcMpi = (1 if len(getGpuArray(MOTIONCOR2_GPU)) == 1 else
                  len(getGpuArray(MOTIONCOR2_GPU)) + 1)
         protMA = project.newProtocol(importPlugin('ProtMotionCorr'),
                                      objLabel='MotionCor2 - movie align.',
                                      gpuList=get(MOTIONCOR2_GPU),
-                                     numberOfMpi=mcMpi,
+                                     numberOfThreads=mcMpi,
                                      doApplyDoseFilter=doDose,
                                      doSaveUnweightedMic=not doDose,
                                      patchX=5, patchY=5,
                                      extraParams2='-SumRange 0 0',  # To avoid DWS files
                                      alignFrame0=frame0,
                                      alignFrameN=frameF)
-        setExtendedInput(protMA.inputMovies, protImport, 'outputMovies')
+        setExtendedInput(protMA.inputMovies, protMG, 'outputMovies')
         _registerProt(protMA)
     else:
         # ----------- CORR ALIGN ----------------------------
@@ -239,10 +253,10 @@ def preprocessWorkflow(configDict):
 
     # *********   CTF ESTIMATION   *****************************************
     # --------- CTF ESTIMATION 2 ---------------------------
-    if getGpuArray(GCTF_GPU):
+    if getGpu(GCTF_GPU):
         protCTF2 = project.newProtocol(importPlugin('ProtGctf'),
                                        objLabel='gCTF estimation',
-                                       gpuList=str(configDict.get(GCTF_GPU)))
+                                       gpuList=get(GCTF_GPU))
         setExtendedInput(protCTF2.inputMicrographs,
                          alignedMicsLastProt, alignMicsOutput)
         _registerProt(protCTF2)
@@ -303,7 +317,18 @@ def preprocessWorkflow(configDict):
                          protPreMics0, 'outputMicrographs')
         _registerProt(protPreMics)
     else:
+        #downSampPreMics = 1
         protPreMics = protPreMics0
+        
+    #protPreMics = project.newProtocol(XmippProtPreprocessMicrographs,
+    #                                  objLabel='Xmipp - preprocess Mics',
+    #                                  doRemoveBadPix=True,
+    #                                  doInvert=not get(INV_CONTR),
+    #                                  doDownsample=downSampPreMics>1,
+    #                                  downFactor=downSampPreMics)
+    #setExtendedInput(protPreMics.inputMicrographs,
+    #                 protCTFs, 'outputMicrographs')
+    #_registerProt(protPreMics)
 
     pickers = []
     pickersOuts = []
@@ -362,6 +387,7 @@ def preprocessWorkflow(configDict):
         protPP2 = project.newProtocol(importPlugin('SphireProtCRYOLOPicking'),
                                       objLabel='Sphire - CrYolo auto-picking',
                                       conservPickVar=0.03,
+                                      streamingBatchSize=4,
                                       gpuList='0')  # CPU version installation
         setBoxSize(protPP2.boxSize)
         setExtendedInput(protPP2.inputMicrographs, protPreMics, 'outputMicrographs')
@@ -377,7 +403,11 @@ def preprocessWorkflow(configDict):
         protPP4 = project.newProtocol(importPlugin('ProtRelionAutopickLoG'),
                                       objLabel='Relion - LoG auto-picking',
                                       conservPickVar=0.03,
-                                      gpuList='0')
+                                      minDiameter=int(get(PARTSIZE)/3),
+                                      maxDiameter=int(get(PARTSIZE)),
+                                      maxResolution=-1,
+                                      threshold=-1,
+                                      streamingBatchSize=4)
         setBoxSize(protPP4.boxSize)
         setExtendedInput(protPP4.inputMicrographs, protPreMics, 'outputMicrographs')
         if waitManualPick:
@@ -445,10 +475,31 @@ def preprocessWorkflow(configDict):
     protDCC = project.newProtocol(XmippProtDeepMicrographScreen,
                                   objLabel='Xmipp - micrograph cleaner',
                                   gpuList=get(GL2D_GPU),
-                                  threshold=0.5,
-                                  streamingBatchSize=9)
+                                  threshold=0.75,
+                                  streamingBatchSize=4,
+                                  micsSource=1)
     setExtendedInput(protDCC.inputCoordinates, finalPicker, outputCoordsStr)
-    _registerProt(protDCC, True)
+    setExtendedInput(protDCC.inputMicrographs, 
+                     protPreMics, 'outputMicrographs')
+    #_registerProt(protDCC, True)
+    dccOutputStr = protDCC.getOutputName()
+    
+    protExtractAnd2 = project.newProtocol(XmippProtExtractParticles,
+                                         objLabel='Xmipp - extract particles TEST',
+                                         boxSize=-1,
+                                         downsampleType=1,  # Other to avoid a bug
+                                         doRemoveDust=True,
+                                         doNormalize=True,
+                                         doInvert=get(INV_CONTR),
+                                         doFlip=True)
+    setExtendedInput(protExtractAnd2.inputCoordinates, protDCC, dccOutputStr)
+    setExtendedInput(protExtractAnd2.inputMicrographs, 
+                     protPreMics, 'outputMicrographs')
+    setExtendedInput(protExtractAnd2.ctfRelations, protCTFs, 'outputCTF')
+    #_registerProt(protExtractAnd2)
+    
+    protDCC = finalPicker
+    dccOutputStr = outputCoordsStr
 
     # ---------------------------------- AND/SINGLE PICKING BRANCH ----------
 
@@ -457,13 +508,14 @@ def preprocessWorkflow(configDict):
     protExtractAnd = project.newProtocol(XmippProtExtractParticles,
                                          objLabel='Xmipp - extract particles%s'%ANDstr,
                                          boxSize=-1,
-                                         downsampleType=0,  # Same as picking
+                                         downsampleType=1,  # Other to avoid a bug
                                          doRemoveDust=True,
                                          doNormalize=True,
                                          doInvert=get(INV_CONTR),
                                          doFlip=True)
-    setExtendedInput(protExtractAnd.inputCoordinates,
-                     protDCC, outputCoordsStr)
+    setExtendedInput(protExtractAnd.inputCoordinates, protDCC, dccOutputStr)
+    setExtendedInput(protExtractAnd.inputMicrographs, 
+                     protPreMics, 'outputMicrographs')
     setExtendedInput(protExtractAnd.ctfRelations, protCTFs, 'outputCTF')
     _registerProt(protExtractAnd)
 
@@ -500,13 +552,15 @@ def preprocessWorkflow(configDict):
         protExtractOr = project.newProtocol(XmippProtExtractParticles,
                                             objLabel='Xmipp - extract particles (OR)',
                                             boxSize=-1,
-                                            downsampleType=0,  # Same as picking
+                                            downsampleType=1,  # Other to skip a bug
                                             doRemoveDust=True,
                                             doNormalize=True,
                                             doInvert=get(INV_CONTR),
                                             doFlip=True)
         setExtendedInput(protExtractOr.inputCoordinates,
                          protCPor, 'consensusCoordinates')
+        setExtendedInput(protExtractOr.inputMicrographs, 
+                         protPreMics, 'outputMicrographs')
         setExtendedInput(protExtractOr.ctfRelations, protCTFs, 'outputCTF')
         _registerProt(protExtractOr)
 
@@ -572,7 +626,7 @@ def preprocessWorkflow(configDict):
 
         # --------- XMIPP GL2D/CL2D ---------------------------
         if get(XMIPP_2D, True):
-            if configDict.get(GL2D_GPU) > -1:
+            if getGpu(GL2D_GPU):
                 gl2dMpi = numCpus if numCpus<32 else 32
                 protCL = project.newProtocol(XmippProtGpuCrrCL2D,
                                              objLabel='Xmipp - GL2D',
@@ -601,8 +655,8 @@ def preprocessWorkflow(configDict):
         if get(RELION_2D, True):
             protCL2 = project.newProtocol(importPlugin('ProtRelionClassify2D'),
                                           objLabel='Relion - 2D classifying',
-                                          doGpu=getGpuArray(RELION_GPU),
-                                          gpusToUse=':'.join(getGpuArray(RELION_GPU, asStr=True)),
+                                          doGpu=bool(getGpu(RELION_GPU)),
+                                          gpusToUse=getGpu(RELION_GPU),
                                           numberOfClasses=16,
                                           relionCPUs=getRelionMPI())
             setExtendedInput(protCL2.inputParticles, protTRIG2, 'outputParticles')
@@ -737,29 +791,42 @@ def preprocessWorkflow(configDict):
             # ---- preprocess mics ----
             if doDownSample3D:
                 # Resizing to a larger sampling rate
-                downSamp3D = get(SAMPLING_3D) / get(SAMPLING)
-                protPreMics3D = project.newProtocol(XmippProtPreprocessMicrographs,
-                                                    objLabel='downsampling to %s SIZE'%label3DStr,
-                                                    doDownsample=True,
-                                                    downFactor=downSamp3D)
-                setExtendedInput(protPreMics3D.inputMicrographs,
+                #downSamp3D = get(SAMPLING_3D) / get(SAMPLING)
+                #protPreMics3D = project.newProtocol(XmippProtPreprocessMicrographs,
+                #                                    objLabel='downsampling to %s SIZE'%label3DStr,
+                #                                    doDownsample=True,
+                #                                    downFactor=downSamp3D)
+                #setExtendedInput(protPreMics3D.inputMicrographs,
+                #                 protPreMics0, 'outputMicrographs')
+                #_registerProt(protPreMics3D) 
+                
+                protExCoord = project.newProtocol(ProtExtractCoords,
+                                                  objLabel='extract coords. to %s SIZE'%label3DStr)
+                setExtendedInput(protExCoord.inputParticles, 
+                                 protSCRor, 'outputParticles')
+                setExtendedInput(protExCoord.inputMicrographs,
                                  protPreMics0, 'outputMicrographs')
-                _registerProt(protPreMics3D)
+                _registerProt(protExCoord)
+                
+                dwnFactor = get(SAMPLING_3D) / get(SAMPLING)
+                
             else:  # from the full sized
-                protPreMics3D = protPreMics0
+                #protPreMics3D = protPreMics0
+                dwnFactor = 1
             # ---- extract parts -------
             protExtract3D = project.newProtocol(XmippProtExtractParticles,
                                                 objLabel='Xmipp - extract part. %s SIZE'%label3DStr,
                                                 boxSize=-1,
                                                 downsampleType=1,  # other mics
+                                                downFactor=dwnFactor,
                                                 doRemoveDust=True,
                                                 doNormalize=True,
                                                 doInvert=get(INV_CONTR),
                                                 doFlip=True)
             setExtendedInput(protExtract3D.inputCoordinates,
-                             protCPor, outCPor)
+                             protExCoord, 'outputCoordinates')
             setExtendedInput(protExtract3D.inputMicrographs,
-                             protPreMics3D, 'outputMicrographs')
+                             protPreMics0, 'outputMicrographs')
             setExtendedInput(protExtract3D.ctfRelations, protCTFs, 'outputCTF')
             _registerProt(protExtract3D)
         else:
@@ -793,15 +860,15 @@ def preprocessWorkflow(configDict):
                                            objLabel='Relion - Refine 3D',
                                            initialLowPassFilterA=15,
                                            symmetryGroup=get(SYMGROUP, 'c1'),
-                                           doGpu=bool(getGpuArray(RELION_GPU)),
-                                           gpusToUse=':'.join(getGpuArray(RELION_GPU, asStr=True)),
+                                           doGpu=bool(getGpu(RELION_GPU)),
+                                           gpusToUse=getGpu(RELION_GPU),
                                            numberOfMpi=getRelionMPI()
                                                    )
             setExtendedInput(protRelionRefine.inputParticles,
                              protPart3D, 'outputParticles')
             setExtendedInput(protRelionRefine.referenceVolume,
                              protVOL3D, vol3Dout)
-            protRelionRefine.addPrerequisites(relion3Ddeps)
+            if relion3Ddeps > 0: protRelionRefine.addPrerequisites(relion3Ddeps)
             _registerProt(protRelionRefine)
             relion3Ddeps = protRelionRefine.getObjId()
 
@@ -810,15 +877,15 @@ def preprocessWorkflow(configDict):
                                            objLabel='Relion - 3D class.',
                                            # initialLowPassFilterA=15,
                                            symmetryGroup=get(SYMGROUP, 'c1'),
-                                           doGpu=bool(getGpuArray(RELION_GPU)),
-                                           gpusToUse=':'.join(getGpuArray(RELION_GPU, asStr=True)),
+                                           doGpu=bool(getGpu(RELION_GPU)),
+                                           gpusToUse=getGpu(RELION_GPU),
                                            numberOfMpi=getRelionMPI()
                                                     )
             setExtendedInput(protRelion3D.inputParticles,
                              protPart3D, 'outputParticles')
             setExtendedInput(protRelion3D.referenceVolume,
                              protVOL3D, vol3Dout)
-            protRelion3D.addPrerequisites(relion3Ddeps)
+            if relion3Ddeps > 0: protRelion3D.addPrerequisites(relion3Ddeps)
             _registerProt(protRelion3D)
             relion3Ddeps = protRelion3D.getObjId()
 
@@ -846,6 +913,7 @@ def preprocessWorkflow(configDict):
             protCS2_3D = project.newProtocol(importPlugin('ProtCryoSparcInitialModel'),
                                              objLabel='Cryosparc2 - 3D class.',
                                              compute_use_ssd=get(USE_CRYOS_SSD, False),
+                                             abinit_K=3,
                                              symmetryGroup=symGroup,
                                              symmetryOrder=symOrder,
                                              numberOfMpi=2,
@@ -857,11 +925,11 @@ def preprocessWorkflow(configDict):
     # ************   FINAL PROTOCOLS   *************************************
     # --------- Streaming classification to monitor --------------------
     if get(DO_2DCLASS, True):
-        if getGpuArray(GL2D_GPU):
+        if getGpu(GL2D_GPU):
             # --------- GL2D in streaming --------------------
             protGL2D = project.newProtocol(XmippProtStrGpuCrrSimple,
                                            objLabel='Xmipp - GL2D assignation',
-                                           gpuList=configDict.get(GL2D_GPU))
+                                           gpuList=get(GL2D_GPU))
             setExtendedInput(protGL2D.inputRefs, protJOIN, 'outputSet')
             setExtendedInput(protGL2D.inputParticles, protSCRor, 'outputParticles')
             _registerProt(protGL2D, True)
