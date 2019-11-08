@@ -117,10 +117,12 @@ class BoxWizardView(tk.Frame):
         # Add the create project button
         btnFrame = tk.Frame(self, bg='white')
         btn = HotButton(btnFrame, text="Create New Session",
+                        activebackground="dark grey",
+                        activeforeground='black',
                         font=self.bigFontBold,
                         command=self._onAction)
         btn.grid(row=0, column=1, sticky='ne', padx=10, pady=10)
-        
+
         # Add the Cancel project button
         btn = Button(btnFrame, Message.LABEL_BUTTON_CANCEL,
                      Icon.ACTION_CLOSE,
@@ -339,7 +341,6 @@ class BoxWizardView(tk.Frame):
         frame.columnconfigure(0, weight=1)
     
     def _onAction(self, e=None):
-
         errors = []
 
         # Check form parameters
@@ -347,7 +348,7 @@ class BoxWizardView(tk.Frame):
 
         # Loading all vars in the form and check types
         errors = self.castParameters(errors)
-        fullProjPath = os.path.join(self.getConfValue(PROJECT_PATH),
+        fullProjPath = os.path.join(self.getConfValue(PROJECTS_PATH),
                                     self.getConfValue(PROJECT_NAME))
         if not errors:
             # Check project path only if no problems with project name
@@ -380,7 +381,7 @@ class BoxWizardView(tk.Frame):
                             "creating the project: \n !! %s !!" % exc)
                 print(errorStr)
                 print(" > Removing that failed project: (rm -rf %s)\n" % fullProjPath)
-                os.system("rm -rf %s" % fullProjPath)
+                # os.system("rm -rf %s" % fullProjPath)
                 self.windows.showError(errorStr)
                 close = False
                 raise
@@ -390,7 +391,7 @@ class BoxWizardView(tk.Frame):
 
         dataPath = self.getConfValue(DEPOSITION_PATTERN)
         projectName = self.getConfValue(PROJECT_NAME)
-        projectPath = os.path.join(self.getConfValue(PROJECT_PATH), projectName)
+        projectPath = os.path.join(self.getConfValue(PROJECTS_PATH), projectName)
 
         print("")
         print("Deposition Pattern: %s" % dataPath)
@@ -587,10 +588,10 @@ class BoxWizardView(tk.Frame):
                                    os.environ.get(PATTERN,
                                                   self.getConfValue(PATTERN)))
             self.setConfValue(DEPOSITION_PATTERN, pattern)
-        if PROJECT_PATH not in self.configDict:
+        if PROJECTS_PATH not in self.configDict:
             scipionProjPath = os.path.join(os.environ.get('SCIPION_USER_DATA'),
                                            'projects')
-            self.setConfValue(PROJECT_PATH, scipionProjPath)
+            self.setConfValue(PROJECTS_PATH, scipionProjPath)
         print("\n -------------------- \n")
         return errors
 
@@ -608,7 +609,8 @@ def createDictFromConfig(confFile):
               ', '.join(getConfFileds('mandatory')[0:-1]) +
               ' and ' + getConfFileds('mandatory')[-1] + '\n')
 
-        print(" - Optional parameters: Please see scipionbox.template\n")
+        print(" - Optional parameters: Please see %s\n"
+              % os.path.abspath('scipionbox.template'))
         if missing:
             print("\n -> Missing: %s\n" % missing)
         sys.exit(1)

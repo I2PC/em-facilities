@@ -27,7 +27,7 @@
 #   ---   CONSTANTS   ---   #
 WINDOWS_TITLE = 'WINDOWS_TITLE'
 VIEW_WIZARD = 'wizardview'
-PROJECT_PATH = 'PROJECT_PATH'
+PROJECTS_PATH = 'PROJECTS_PATH'
 
 # - conf - #
 DEPOSITION_PATTERN = 'DEPOSITION_PATTERN'
@@ -193,7 +193,7 @@ formatConfParameters = [(SIMULATION, bool, False),
                         (INV_CONTR, bool, 'Mandatory'),
                         (NUM_CPU, int, -1),
                         (MICS2PICK, int, 10),
-                        (MOTIONCOR2_GPU, str, '2,3'),
+                        (MOTIONCOR2_GPU, str, '2, 3'),
                         (GCTF_GPU, str, '2'),
                         (CRYOLO, bool, True),
                         (RELION_GPU, str, '1'),

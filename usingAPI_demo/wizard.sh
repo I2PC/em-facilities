@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # MAIN VARS
-preCommands="cryosparc/cryosparc2_master/bin/cryosparcm restart"
-scipionWrapper=/opt/VirtualGL/bin/vglrun
-scipionBin=~/scipion/scipion
+preCommands=""  # "cryosparc/cryosparc2_master/bin/cryosparcm restart"
+scipionWrapper=""  # /opt/VirtualGL/bin/vglrun
+scipionBin=~/scipionDEVEL/scipion
 emfacilities=~/em-facilities
 tokenDir=/tmp/scipion
 
@@ -35,15 +35,18 @@ runJob $scipionBin python $launcherScript
 # Getting project name form token
 ls $tokenPattern >>/dev/null 2>/dev/null &&
 projectToken=$(ls $tokenPattern) &&
-project="${projectToken#*_}"
-rm $tokenPattern 2>/dev/null
+project="${projectToken#*_}" &&
+rm $tokenPattern
 
 if [ "$project" ]
 then
-  # Scheduling the whole project
-  runJob $scipionBin python $scriptFolder/schedule_project.py $project &
+  # Set colors and labels
+  runJob $scipionWrapper $scipionBin python $scriptFolder/set_labels_colors.py $project
 
-  # Launch Scipion project using the token
+  # Scheduling the whole project
+#  runJob $scipionBin python $scriptFolder/schedule_project.py $project &
+
+  # Launch Scipion project
   runJob $scipionWrapper $scipionBin project $project
 fi
 
@@ -51,5 +54,5 @@ fi
 ls $pidPattern >>/dev/null 2>/dev/null &&
 pidToken=$(ls $pidPattern) &&
 echo "Stopping the simulation..." &&
-kill -9 "${pidToken#*_}"
-rm $pidToken 2>/dev/null
+kill -9 "${pidToken#*_}" &&
+rm $pidToken
