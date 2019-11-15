@@ -41,8 +41,9 @@ rm $tokenPattern
 
 if [ "$project" ]
 then
-  if ls $tokenDir/wait4picking_$project >>/dev/null 2>/dev/null
-    then scheduleArg = '--ignore XmippProtParticlePicking'
+  if ls $tokenDir/wait2pick_$project >>/dev/null 2>/dev/null
+    then scheduleArg='--ignore XmippProtParticlePicking'
+    rm $tokenDir/wait2pick_$project
   fi
 
   # Set colors and labels

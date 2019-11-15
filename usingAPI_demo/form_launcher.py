@@ -298,7 +298,7 @@ class BoxWizardView(tk.Frame):
                                t2='(-1 for an automatic value)')
         if self.getConfValue(ASK_3D_PROT, True) or self.getConfValue(ASK_ALL, False):
             lastRow = _addPair("Protocols:", labelFrame6, lastRow+1, entry="else")
-            lastRow, c = _addCheckPair(RELION_REFINE, labelFrame6, lastRow, default=True)
+            lastRow, c = _addCheckPair(RELION_REFINE, labelFrame6, lastRow, default=False)
             lastRow, c = _addCheckPair(RELION_3DCL, labelFrame6, lastRow, default=True, col=c+1)
             lastRow, c = _addCheckPair(CRYOS_3D, labelFrame6, lastRow+1, default=True)
 
@@ -441,7 +441,8 @@ class BoxWizardView(tk.Frame):
         preprocessWorkflow(self.configDict)
 
         os.system('touch /tmp/scipion/project_%s' % projectName)
-        os.system('touch /tmp/scipion/wait4picking_%s' % projectName)
+        if self.getConfValue(WAIT2PICK, False):
+            os.system('touch /tmp/scipion/wait2pick_%s' % projectName)
 
         # ignoreOption = '' # '--ignore XmippProtParticlePicking'
         # os.system('%s python %s %s %s &' % (pw.getScipionScript(),

@@ -335,7 +335,7 @@ def preprocessWorkflow(configDict):
         protTRIG0 = project.newProtocol(XmippProtTriggerData,
                                         objLabel='Xmipp - trigger some mics',
                                         outputSize=get(MICS2PICK, 10),
-                                        allImages=True)
+                                        allImages=get(WAIT2PICK))
         setExtendedInput(protTRIG0.inputImages, protPreMics, 'outputMicrographs')
         _registerProt(protTRIG0, 'Picking')
 
