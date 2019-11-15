@@ -3,7 +3,7 @@ DEPOSITION_DIR = ~/microDepositions
 SCIPION_ACQUISITION_PATTERN = *.mrc
 GAIN_PAT = gain.mrc
 SIMULATION = True
-RAWDATA_SIM = ~/rawData/EMPIAR_10062_2dwsamp
+RAWDATA_SIM = ~/rawData/EMPIAR_10061
 PROJECTS_PATH = ~/ScipionUserData/projects
 
 [FORM]
