@@ -216,6 +216,10 @@ class BoxWizardView(tk.Frame):
             lastRow = _addPair(DEPOSITION_PATTERN, labelFrame, lastRow+1,
                                default=self.getConfValue(DEPOSITION_PATTERN),
                                width=30)
+                            
+        if self.getConfValue(ASK_PATH, True) or self.getConfValue(ASK_ALL, False):
+            path2ask = RAWDATA_SIM if self.getConfValue(SIMULATION, False) else DEPOSITION_DIR
+            lastRow = _addPair(path2ask, labelFrame, lastRow+1, default='', width=30)
 
         ### MotionCor2 parameters ###
         labelFrame2, lastSection = _addSection(lastSection+1,
@@ -437,6 +441,7 @@ class BoxWizardView(tk.Frame):
         preprocessWorkflow(self.configDict)
 
         os.system('touch /tmp/scipion/project_%s' % projectName)
+        os.system('touch /tmp/scipion/wait4picking_%s' % projectName)
 
         # ignoreOption = '' # '--ignore XmippProtParticlePicking'
         # os.system('%s python %s %s %s &' % (pw.getScipionScript(),
@@ -646,6 +651,8 @@ def createDictFromConfig(confFile):
 def castConf(var, value):
     """ Casting definitions for config parameters.
     """
+    value = pwutils.expandPattern(value)
+        
     castList = [c for k, c, d in formatConfParameters if k == var]
     if castList:
         cast = castList[0]

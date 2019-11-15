@@ -128,7 +128,7 @@ def preprocessWorkflow(configDict):
     def getRelionMPI(confVar=RELION_GPU):
         gpuList = getGpuArray(confVar)
         if gpuList:
-            return (1 if len(gpuList) == 1 else len(gpuList) + 1)
+            return 3
         else:
             return numCpus - 10 if numCpus > 10 else 4
 
@@ -334,7 +334,7 @@ def preprocessWorkflow(configDict):
         # -------- TRIGGER MANUAL-PICKER ---------------------------
         protTRIG0 = project.newProtocol(XmippProtTriggerData,
                                         objLabel='Xmipp - trigger some mics',
-                                        outputSize=get(MICS2PICK),
+                                        outputSize=get(MICS2PICK, 10),
                                         allImages=True)
         setExtendedInput(protTRIG0.inputImages, protPreMics, 'outputMicrographs')
         _registerProt(protTRIG0, 'Picking')
@@ -380,7 +380,7 @@ def preprocessWorkflow(configDict):
             protDotBoxSize.set(bxSize)
 
     # --------- PARTICLE PICKING CRYOLO ---------------------------
-    if get(CRYOLO, True):
+    if get(CRYOLO, True) and not waitManualPick:  # manualPick work alone, so far
         protPP2 = project.newProtocol(importPlugin('SphireProtCRYOLOPicking'),
                                       objLabel='Sphire - CrYolo auto-picking',
                                       conservPickVar=0.03,
@@ -396,12 +396,12 @@ def preprocessWorkflow(configDict):
         pickersOuts.append('outputCoordinates')
 
     # --------- PARTICLE PICKING RELION LOG -----------------
-    if get(RELION_PICK, True):
+    if get(RELION_PICK, True) and not waitManualPick:  # manualPick work alone, so far
         protPP4 = project.newProtocol(importPlugin('ProtRelionAutopickLoG'),
                                       objLabel='Relion - LoG auto-picking',
                                       conservPickVar=0.03,
-                                      minDiameter=int(get(PARTSIZE)/3),
-                                      maxDiameter=int(get(PARTSIZE)),
+                                      minDiameter=bxSize-20,
+                                      maxDiameter=bxSize+10,
                                       maxResolution=-1,
                                       threshold=-1,
                                       streamingBatchSize=4)
@@ -415,7 +415,7 @@ def preprocessWorkflow(configDict):
         pickersOuts.append('outputCoordinates')
 
     # --------- PARTICLE PICKING SPARX ---------------------------
-    if get(SPARX, False):
+    if get(SPARX, False) and not waitManualPick:  # manualPick work alone, so far
         # Be careful with the contrast, Sparx needs different contrast than CRYOLO
         protPP1 = project.newProtocol(importPlugin('SparxGaussianProtPicking'),
                                       objLabel='Eman - Sparx auto-picking',
@@ -429,7 +429,7 @@ def preprocessWorkflow(configDict):
         pickersOuts.append('outputCoordinates')
         
        # --------- PARTICLE PICKING DOGPICKER ---------------------------
-    if get(DOGPICK, False) and not waitManualPick:
+    if get(DOGPICK, False) and not waitManualPick:  # manualPick work alone, so far
         protPP3 = project.newProtocol(importPlugin('DogPickerProtPicking'),
                                       objLabel='Appion - DoG auto-picking',
                                       diameter=bxSize*get(SAMPLING))  # in A
@@ -478,7 +478,7 @@ def preprocessWorkflow(configDict):
     setExtendedInput(protDCC.inputCoordinates, finalPicker, outputCoordsStr)
     setExtendedInput(protDCC.inputMicrographs,
                      protPreMics, 'outputMicrographs')
-    #_registerProt(protDCC, 'Picking', True)
+    #_registerProt(protDCC, 'Picking', True)  # not working yet
     dccOutputStr = protDCC.getOutputName()
 
     protExtractAnd2 = project.newProtocol(XmippProtExtractParticles,
@@ -623,7 +623,7 @@ def preprocessWorkflow(configDict):
 
         # --------- XMIPP GL2D/CL2D ---------------------------
         if get(XMIPP_2D, True):
-            if getGpu(GL2D_GPU):
+            if False:  # getGpu(GL2D_GPU):
                 gl2dMpi = numCpus if numCpus<32 else 32
                 protCL = project.newProtocol(XmippProtGpuCrrCL2D,
                                              objLabel='Xmipp - GL2D',
@@ -635,7 +635,7 @@ def preprocessWorkflow(configDict):
                                              objLabel='Xmipp - CL2D',
                                              doCore=False,
                                              numberOfClasses=16,
-                                             numberOfMpi=numCpus)
+                                             numberOfMpi=numCpus-20)
             setExtendedInput(protCL.inputParticles, protTRIG2, 'outputParticles')
             _registerProt(protCL, '2Dclassify')
             classifiers.append(protCL)
@@ -715,7 +715,7 @@ def preprocessWorkflow(configDict):
             protINITVOL = project.newProtocol(importPlugin('EmanProtInitModel'),
                                               objLabel='Eman - Initial vol',
                                               symmetry=get(SYMGROUP, 'c1'),
-                                              numberOfThreads=initVolCpus-4,
+                                              numberOfThreads=initVolCpus,
                                               numberOfModels=7)
             setExtendedInput(protINITVOL.inputSet, protCLSEL, 'outputAverages')
             if initVolDeps > 0: protINITVOL.addPrerequisites(initVolDeps)
@@ -725,7 +725,7 @@ def preprocessWorkflow(configDict):
             initVolsOuts.append('outputVolumes')
 
         # --------- RECONSTRUCT RANSAC ---------------------------
-        if get(RANSAC, True):
+        if get(RANSAC, False):
             protRAN = project.newProtocol(XmippProtRansac,
                                           objLabel='Xmipp - Ransac significant',
                                           symmetryGroup=get(SYMGROUP, 'c1'),
@@ -927,9 +927,9 @@ def preprocessWorkflow(configDict):
             protGL2D = project.newProtocol(XmippProtStrGpuCrrSimple,
                                            objLabel='Xmipp - GL2D assignation',
                                            gpuList=get(GL2D_GPU))
-            setExtendedInput(protGL2D.inputRefs, protJOIN, 'outputSet')
+            setExtendedInput(protGL2D.inputRefs, protCl2Av2, 'outputAverages')
             setExtendedInput(protGL2D.inputParticles, protSCRor, 'outputParticles')
-            _registerProt(protGL2D, 'useful_OUTPUTs', color='#00ff00', toSummary=True)
+            _registerProt(protGL2D, 'useful_OUTPUTs', color='#00ff00')
         else:
             # --------- ADDING 2D CLASSIFIERS -------------------------
             clProt2Streaming = protCL2 if get(RELION_2D) else classifiers[0]
@@ -941,7 +941,7 @@ def preprocessWorkflow(configDict):
                                                samplingInterval=1 if get(TIMEOUT) < 10 else 10)
             setExtendedInput(protStreamer.inputParticles, protSCRor, 'outputParticles')
             if relion3Ddeps > 0: protStreamer.addPrerequisites(relion3Ddeps)
-            _registerProt(protStreamer, '2Dclassify', True)
+            _registerProt(protStreamer, '2Dclassify')
 
 
     # --------- SUMMARY MONITOR -----------------------

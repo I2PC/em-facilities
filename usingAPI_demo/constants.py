@@ -47,6 +47,7 @@ NUM_CPU = 'NUM_CPU'
 # Form fields
 PROJECT_NAME = "PROJECT_NAME"
 ASK_ALL = 'ASK_ALL'
+ASK_PATH = 'ASK_PATH'
 
 MOTIONCOR2_GPU = "MOTIONCOR2_GPU"
 FRAMES = "FRAMES"
@@ -116,6 +117,8 @@ LABELS = {
     USER_NAME: "User name",
     SAMPLE_NAME: "Sample name",
     PROJECT_NAME: "Project name",
+    DEPOSITION_DIR: "Deposition path",
+    RAWDATA_SIM: "Movies path",
     DEPOSITION_PATTERN: "Acquisition pattern",
     FRAMES: "Frames range",
     DOSE0: "Initial dose",

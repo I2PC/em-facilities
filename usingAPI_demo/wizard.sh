@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # MAIN VARS
-preCommands=""  # "cryosparc/cryosparc2_master/bin/cryosparcm restart"
-scipionWrapper=""  # /opt/VirtualGL/bin/vglrun
-scipionBin=~/scipionDEVEL/scipion
+preCommands="cryosparc/cryosparc2_master/bin/cryosparcm start"
+scipionWrapper=/opt/VirtualGL/bin/vglrun
+scipionBin=~/scipion/scipion
 emfacilities=~/em-facilities
 tokenDir=/tmp/scipion
 
@@ -29,6 +29,7 @@ if ! ls $tokenDir >>/dev/null 2>/dev/null ; then mkdir $tokenDir ; fi
 rm $tokenPattern 2>/dev/null
 
 # Launch the acquisition form and start the simulation
+export ScipionProjectName=$(date +%Y%m%d)_mySelf_myProtein
 $preCommands &
 runJob $scipionBin python $launcherScript
 
@@ -40,11 +41,15 @@ rm $tokenPattern
 
 if [ "$project" ]
 then
+  if ls $tokenDir/wait4picking_$project >>/dev/null 2>/dev/null
+    then scheduleArg = '--ignore XmippProtParticlePicking'
+  fi
+  
   # Set colors and labels
   runJob $scipionWrapper $scipionBin python $scriptFolder/set_labels_colors.py $project
 
   # Scheduling the whole project
-#  runJob $scipionBin python $scriptFolder/schedule_project.py $project &
+  runJob $scipionBin python $scriptFolder/schedule_project.py $project $scheduleArg &
 
   # Launch Scipion project
   runJob $scipionWrapper $scipionBin project $project
