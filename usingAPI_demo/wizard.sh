@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # MAIN VARS
-preCommands="cryosparc/cryosparc2_master/bin/cryosparcm start"
-scipionWrapper=/opt/VirtualGL/bin/vglrun
+preCommands=""   # "cryosparc/cryosparc2_master/bin/cryosparcm start"
+scipionWrapper=""   # /opt/VirtualGL/bin/vglrun
 scipionBin=~/scipion/scipion
 emfacilities=~/em-facilities
 tokenDir=/tmp/scipion
@@ -11,7 +11,7 @@ tokenDir=/tmp/scipion
 scriptFolder=$emfacilities/usingAPI_demo
 launcherScript=$scriptFolder/form_launcher.py
 tokenPattern=$tokenDir/project_*  # must coincide with the token made by the form_launcher.py
-pidPattern=$tokenDir/simulation_* # must coincide with the token made by the simulate_acquitition.py
+simPattern=$tokenDir/simulation_* # must coincide with the token made by the simulate_acquitition.py
 
 function runJob(){
   echo
@@ -57,8 +57,8 @@ then
 fi
 
 # Getting simulation's pid to kill it
-ls $pidPattern >>/dev/null 2>/dev/null &&
-pidToken=$(ls $pidPattern) &&
+ls $simPattern >>/dev/null 2>/dev/null &&
+pidToken=$(ls $simPattern) &&
 echo "Stopping the simulation..." &&
 kill -9 "${pidToken#*_}" &&
 rm $pidToken
