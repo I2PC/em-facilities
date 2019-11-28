@@ -703,6 +703,7 @@ def preprocessWorkflow(configDict):
                                           objLabel='Xmipp - Recons. significant',
                                           symmetryGroup=get(SYMGROUP, 'c1'),
                                           numberOfMpi=initVolCpus,
+                                          useGpu=False,
                                           iter=35)
             setExtendedInput(protSIG.inputSet, protCLSEL, 'outputAverages')
             _registerProt(protSIG, 'initVol')
@@ -729,6 +730,7 @@ def preprocessWorkflow(configDict):
             protRAN = project.newProtocol(XmippProtRansac,
                                           objLabel='Xmipp - Ransac significant',
                                           symmetryGroup=get(SYMGROUP, 'c1'),
+                                          useGpu=False,
                                           numberOfThreads=initVolCpus)
             setExtendedInput(protRAN.inputSet, protCLSEL, 'outputAverages')
             if initVolDeps > 0: protRAN.addPrerequisites(initVolDeps)
@@ -752,6 +754,7 @@ def preprocessWorkflow(configDict):
                                             objLabel='Xmipp - Swarm init. vol.',
                                             symmetryGroup=get(SYMGROUP, 'c1'),
                                             numberOfMpi=numCpus,
+                                            useGpu=False,
                                             numberOfIterations=5)
             setExtendedInput(protSWARM.inputParticles, protTRIG2, 'outputParticles')
             setExtendedInput(protSWARM.inputVolumes, protAVOL, 'outputVolumes')
