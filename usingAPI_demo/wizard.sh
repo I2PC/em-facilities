@@ -47,7 +47,7 @@ then
   fi
 
   # Set colors and labels
-  runJob $scipionWrapper $scipionBin python $scriptFolder/set_labels_colors.py $project
+  runJob $scipionBin python $scriptFolder/set_labels_colors.py $project
 
   # Scheduling the whole project
   runJob $scipionBin python $scriptFolder/schedule_project.py $project $scheduleArg &

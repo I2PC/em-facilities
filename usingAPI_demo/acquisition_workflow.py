@@ -190,7 +190,8 @@ def preprocessWorkflow(configDict):
                                  objLabel='Xmipp - movie gain',
                                  frameStep=5,
                                  movieStep=40,
-                                 estimateOrientation=False)
+                                 estimateOrientation=bool(gainFn),
+                                 normalizeGain=bool(gainFn))
     setExtendedInput(protMG.inputMovies, protImport, 'outputMovies')
     _registerProt(protMG, label='Movies', toSummary=True)
 
