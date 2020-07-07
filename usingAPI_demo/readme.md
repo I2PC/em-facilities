@@ -97,3 +97,12 @@ Set `CRYOLO_HOME=/path/to/cryolo`.
 `./scipion installp -p scipion-em-cryosparc2`.
 Set `CRYOSPARC_HOME=/path/to/cryosparc2`.
 
+
+## Installing the Acquisition Demo Workflow
+
+Clone this repository
+```
+cd
+git clone https://github.com/I2PC/em-facilities
+```
+
