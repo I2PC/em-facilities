@@ -15,7 +15,7 @@ import pyworkflow.utils as pwutils
 
 
 def usage(error):
-    print """
+    print("""
     ERROR: %s
     
     Usage: simulate_acquisition.py INPUT_PATTERN OUTPUT_FOLDER TIME
@@ -23,7 +23,7 @@ def usage(error):
         OUTPUT_FOLDER: where to create the output links.
         [GAIN_FILE]: gain file will be linked at beginning
         [DELAY, default 30]: delay in seconds between file appearance
-    """ % error
+    """ % error)
     sys.exit(1)    
 
 
@@ -55,12 +55,12 @@ elif len(sys.argv) == 5:
 inputFiles = glob(pwutils.expandPattern(inputPattern))
 inputFiles.sort()
 if gain is not None:
-    print "Gain path: ", gain
-print "Input pattern: ", inputPattern
-# print "Input files: ", inputFiles
-print "Delay: ", str(delay), " seconds."
+    print("Gain path: ", gain)
+print("Input pattern: ", inputPattern)
+# print("Input files: ", inputFiles)
+print("Delay: ", str(delay), " seconds.")
 
-print "Cleaning output directory: ", outputDir
+print("Cleaning output directory: ", outputDir)
 pwutils.cleanPath(outputDir)
 pwutils.makePath(outputDir)
 
@@ -69,12 +69,12 @@ os.system("touch /tmp/scipion/simulation_%d" % (os.getpid()))
 aTime = int(delay)
 n = 5
 t = aTime / n
-# print "t=%s" % aTime
+# print("t=%s" % aTime)
 
 if gain is not None:
     outputPath = os.path.join(outputDir, os.path.basename(gain))
     if not os.path.isdir(outputDir):
-        print "Linking %s -> %s" % (outputPath, gain)
+        print("Linking %s -> %s" % (outputPath, gain))
         pwutils.cleanPath(outputPath)
         try:
             pwutils.createLink(gain, outputPath)
@@ -83,7 +83,7 @@ if gain is not None:
 
 for f in inputFiles:
     outputPath = os.path.join(outputDir, os.path.basename(f))
-    print "Linking %s -> %s" % (outputPath, f)
+    print("Linking %s -> %s" % (outputPath, f))
 
     pwutils.cleanPath(outputPath)
     pwutils.createLink(f, outputPath)
